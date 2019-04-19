@@ -19,18 +19,23 @@
         <div class="value">{{ electron }}</div>
       </div>
       <div class="item">
-        <div class="name">Node:</div>
+        <div class="name">NodeJS:</div>
         <div class="value">{{ node }}</div>
       </div>
       <div class="item">
         <div class="name">Platform:</div>
         <div class="value">{{ platform }}</div>
       </div>
+      <div class="item">
+        <div class="name">Platform:</div>
+        <div class="value">{{ main }}</div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+  import {mapState} from 'vuex';
   export default {
     data () {
       return {
@@ -41,6 +46,9 @@
         platform: require('os').platform(),
         vue: require('vue/package.json').version
       }
+    },
+    computed: {
+      ...mapState('Counter', ['main'])
     }
   }
 </script>

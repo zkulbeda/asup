@@ -15,10 +15,12 @@ const actions = {
   someAsyncTask ({ commit }) {
     // do something async
     commit('INCREMENT_MAIN_COUNTER')
+    console.log('ok')
   }
 }
 
 export default {
+  namespaced: true,
   state,
   mutations,
   actions

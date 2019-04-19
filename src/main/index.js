@@ -1,4 +1,5 @@
 import { app, BrowserWindow } from 'electron'
+import '../renderer/store'
 
 /**
  * Set `__static` path to static files in production
@@ -38,11 +39,11 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.on('activate', () => {
-  if (mainWindow === null) {
-    createWindow()
-  }
-})
+// app.on('activate', () => {
+//   if (mainWindow === null) {
+//     createWindow()
+//   }
+// })
 
 /**
  * Auto Updater

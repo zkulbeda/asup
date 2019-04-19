@@ -7,8 +7,9 @@ import store from './store'
 
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.http = Vue.prototype.$http = axios
-Vue.config.productionTip = false
-
+Vue.config.productionTip = true//false
+Vue.config.devtools = true
+require('devtron').install()
 /* eslint-disable no-new */
 new Vue({
   components: { App },

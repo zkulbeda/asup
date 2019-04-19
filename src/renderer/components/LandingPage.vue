@@ -11,7 +11,8 @@
 
       <div class="right-side">
         <div class="doc">
-          <div class="title">Getting Started</div>
+          <div class="title">Getting Started!!!</div>
+          <CameraView></CameraView>
           <p>
             electron-vue comes packed with detailed documentation that covers everything from
             internal configurations, using the project structure, building your application,
@@ -23,6 +24,7 @@
           <div class="title alt">Other Documentation</div>
           <button class="alt" @click="open('https://electron.atom.io/docs/')">Electron</button>
           <button class="alt" @click="open('https://vuejs.org/v2/guide/')">Vue.js</button>
+          <button class="alt" @click="inc">INC</button>
         </div>
       </div>
     </main>
@@ -31,13 +33,18 @@
 
 <script>
   import SystemInformation from './LandingPage/SystemInformation'
+  import CameraView from "./CameraView";
 
   export default {
     name: 'landing-page',
-    components: { SystemInformation },
+    components: {CameraView , SystemInformation },
     methods: {
       open (link) {
         this.$electron.shell.openExternal(link)
+      },
+      inc(){
+        console.log('incc', this.$store);
+        this.$store.dispatch('Counter/someAsyncTask');
       }
     }
   }
