@@ -1,47 +1,35 @@
 <template>
-  <div id="wrapper">
-    <img id="logo" src="~@/assets/logo.png" alt="electron-vue">
-    <main>
-      <div class="left-side">
-        <span class="title">
-          Welcome to your new project!
-        </span>
-        <system-information></system-information>
-      </div>
-
-      <div class="right-side">
-        <div class="doc">
-          <div class="title">Getting Started!!!</div>
-          <CameraView></CameraView>
-          <p>
-            electron-vue comes packed with detailed documentation that covers everything from
-            internal configurations, using the project structure, building your application,
-            and so much more.
-          </p>
-          <button @click="open('https://simulatedgreg.gitbooks.io/electron-vue/content/')">Read the Docs</button><br><br>
-        </div>
-        <div class="doc">
-          <div class="title alt">Other Documentation</div>
-          <button class="alt" @click="open('https://electron.atom.io/docs/')">Electron</button>
-          <button class="alt" @click="open('https://vuejs.org/v2/guide/')">Vue.js</button>
-          <button class="alt" @click="inc">INC</button>
-        </div>
-      </div>
-    </main>
-  </div>
+  <b-container>
+    <b-row>
+        <b-col>
+        <CameraView @decode="decode"></CameraView>
+        </b-col>
+        <b-col>
+            <b-row v-for="(qr,i) in scans" :key="i">
+                <b-alert show>{{qr}}</b-alert>
+            </b-row>
+        </b-col>
+    </b-row>
+  </b-container>
 </template>
 
 <script>
   import SystemInformation from './LandingPage/SystemInformation'
   import CameraView from "./CameraView";
 
+
   export default {
     name: 'landing-page',
-    components: {CameraView , SystemInformation },
-    methods: {
-      open (link) {
-        this.$electron.shell.openExternal(link)
+    components: {CameraView , SystemInformation,},
+      data(){
+        return {
+            scans: []
+        }
       },
+    methods: {
+        decode(data){
+            this.scans.push(data);
+        },
       inc(){
         console.log('incc', this.$store);
         this.$store.dispatch('Counter/someAsyncTask');

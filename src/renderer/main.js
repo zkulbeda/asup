@@ -4,6 +4,14 @@ import axios from 'axios'
 import App from './App'
 import router from './router'
 import store from './store'
+import nedb from 'nedb-promise';
+import BootstrapVue from 'bootstrap-vue'
+Vue.use(BootstrapVue);
+import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap-vue/dist/bootstrap-vue.css'
+import path from 'path';
+const { app, getGlobal } = require('electron').remote;
+import luxon from 'luxon'
 
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.http = Vue.prototype.$http = axios
@@ -11,9 +19,14 @@ Vue.config.productionTip = true//false
 Vue.config.devtools = true
 require('devtron').install()
 /* eslint-disable no-new */
-new Vue({
+
+// Vue.prototype.$students = db;
+Vue.prototype.$config = getGlobal('config');
+// Vue.prototype.$dbDay = config;
+let v = new Vue({
   components: { App },
   router,
   store,
   template: '<App/>'
-}).$mount('#app')
+});
+v.$mount('#app')
