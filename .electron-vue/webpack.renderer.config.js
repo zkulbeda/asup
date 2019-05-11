@@ -19,7 +19,7 @@ const { VueLoaderPlugin } = require('vue-loader')
  * that provide pure *.vue files that need compiling
  * https://simulatedgreg.gitbooks.io/electron-vue/content/en/webpack-configurations.html#white-listing-externals
  */
-let whiteListedModules = ['vue']
+let whiteListedModules = ['vue', 'bootstrap-vue']
 
 let rendererConfig = {
   devtool: '#cheap-module-eval-source-map',
@@ -31,6 +31,10 @@ let rendererConfig = {
   ],
   module: {
     rules: [
+      {
+        test: /\.worker\.js$/,
+        use: { loader: 'worker-loader' }
+      },
       {
         test: /\.less$/,
         use: ['vue-style-loader', 'css-loader', 'less-loader']
@@ -121,11 +125,13 @@ let rendererConfig = {
   output: {
     filename: '[name].js',
     libraryTarget: 'commonjs2',
-    path: path.join(__dirname, '../dist/electron')
+    path: path.join(__dirname, '../dist/electron'),
+    globalObject: 'this'
   },
   resolve: {
     alias: {
       '@': path.join(__dirname, '../src/renderer'),
+      "icons": path.resolve(__dirname, "../node_modules/vue-material-design-icons"),
       'vue$': 'vue/dist/vue.esm.js'
     },
     extensions: ['.js', '.vue', '.json', '.css', '.node']

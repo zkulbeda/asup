@@ -1,5 +1,5 @@
 <template>
-    <b-container>
+    <b-container style="margin-top: 50px">
         <b-col cols="3">
             <b-row>
                 MENU
@@ -13,7 +13,8 @@
 
 <script>
     export default {
-        name: "Main"
+        name: "Main",
+
     }
 </script>
 

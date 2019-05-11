@@ -1,5 +1,6 @@
 import nedb from "nedb-promise";
 import path from "path";
+import keyBy from 'lodash/keyBy'
 let {app} = require('electron').remote;
 let db = null;
 db = nedb({
@@ -9,21 +10,58 @@ db = nedb({
 console.log(db);
 
 const state = {
-    students: null
+    students: null,
+    initialized: false
 }
 
 const mutations = {
+    init(state){
+        if(state.initialized){
+            console.error("DB Students was initialized yet");
+        }else state.initialized = true;
+    },
+    setStudents(state, pl){
+        state.students = keyBy(pl, 'id');
+    },
+    addStudent(state, pl){
+        state.students[pl.id] = pl;
+    },
     test(){
 
     }
 }
 
 const actions = {
-    init({ }) {
-        db.loadDatabase();
-        //db = e.getGlobal('students');
-        // do something async
-        console.log(db);
+    async init({dispatch, commit}) {
+        commit('init');
+        await db.loadDatabase();
+        await dispatch('refreshStudents');
+        return db;
+    },
+    async refreshStudents({commit}){
+        let res = await db.find({});
+        commit('setStudents', res);
+        return res;
+    },
+    async insertStudent({commit},pl){
+        let newStudent = await db.insert({name: pl.name, group: pl.group, pays: pl.pays});
+        commit('addStudent', newStudent);
+        return newStudent;
+    },
+    async random({commit},n){
+        for(let i = 0; i<n; i++) {
+            let newStudent = await db.insert({name: 'dfghfgh', group: '10Б', pays: true, id: '123'+i});
+            commit('addStudent', newStudent);
+        }
+    },
+    async record({dispatch, commit},{id, img}){
+        let st = await db.findOne({id});
+        if(st === null) throw {'message':'Ученик не найден'};
+        let rd = await dispatch('ThisDay/addStudent', {...st, img}, {root:true});
+        return {st, rd};
+    },
+    test({ }){
+        return db.find({}).then((d)=>{console.log(d)}).catch((e)=>{console.error(e)});
     }
 }
 

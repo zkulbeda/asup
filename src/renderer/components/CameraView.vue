@@ -43,10 +43,10 @@
                 this.$emit('error',e);
             });
             scanner.on('scan',(data, image)=>{
-                if(data!==last){
-                    last = data;
+                // if(data!==last){
+                //     last = data;
                     this.$emit('decode', data, image);
-                }
+                // }
             })
         },
         beforeDestroy(){

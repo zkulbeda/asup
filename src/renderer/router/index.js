@@ -6,13 +6,23 @@ Vue.use(Router)
 export default new Router({
   routes: [
     {
-      path: '/',
+      path: '/ScanningPage',
       name: 'scanning-page',
       component: require('@/components/ScanningPage').default
     },
     {
+      path: '/students',
+      name: 'students-view-page',
+      component: require('@/components/StudentsPage').default
+    },
+    {
+      path: '/create-report',
+      name: 'report-view-page',
+      component: require('@/components/CreateReport').default
+    },
+    {
       path: '*',
-      redirect: '/'
+      redirect: '/ScanningPage'
     }
   ]
 })

@@ -1,0 +1,73 @@
+<template>
+    <div class="StudentInfoCard">
+        <template v-if="hasStudent">
+            <h2>{{data.st.name}}</h2>
+            <div class="StudentInfoPrice">Питается <span :class="[data.st.pays?'nonfree':'free']">{{data.st.pays?'платно':'бесплатно'}}</span></div>
+            <div class="StudentInfoClass">Учащийся {{data.st.group}} класса</div>
+            <div class="StudentInfoTime">Записан в {{data.rd.createdAt | formatTime}} ({{data.rd.createdAt | formatTimeFromNow}})</div>
+            <div v-if="error" class="StudentInfoError">{{error}}</div>
+<!--            <img class="StudentInfoCardImg" :src="student.img" :alt="student.name+' '+student.group">-->
+        </template>
+        <div v-else>
+            <h2>Ожидание сканирования...</h2>
+            <p class="StudentInfoTime">Поместите карту питания в поле камеры</p>
+        </div>
+    </div>
+</template>
+
+<script>
+    import {DateTime} from 'luxon'
+    export default {
+        props: {
+            data: {
+                required: true
+            },
+            error: true
+        },
+        name: "StudentScanCard",
+        computed: {
+            hasStudent(){
+                console.log(this.data);
+                return this.data!==null;
+            }
+        },
+        filters:{
+            formatTime(time){
+                return DateTime.fromJSDate(time).toLocaleString(DateTime.TIME_24_WITH_SECONDS);
+            },
+            formatTimeFromNow(time){
+                return DateTime.fromJSDate(time).setLocale('ru').toRelative();
+            }
+        }
+    }
+</script>
+
+<style scoped>
+    .StudentInfoCard{
+        height: 200px;
+        position: relative;
+        margin-top: 15px;
+    }
+    .StudentInfoCardImg{
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 90%;
+    }
+    .StudentInfoClass, .StudentInfoPrice, .StudentInfoTime{
+        font-size: 18px;
+    }
+    .StudentInfoCard .nonfree{
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .StudentInfoCard .free{
+        color: #189e37;
+        font-weight: normal;
+    }
+    .StudentInfoError{
+        color: #dc3545;
+        font-weight: bold;
+        font-size: 30px;
+    }
+</style>

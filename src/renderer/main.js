@@ -17,7 +17,10 @@ if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.http = Vue.prototype.$http = axios
 Vue.config.productionTip = true//false
 Vue.config.devtools = true
-require('devtron').install()
+Vue.config.silent = true
+import VModal from 'vue-js-modal'
+Vue.use(VModal)
+//require('devtron').install()
 /* eslint-disable no-new */
 
 // Vue.prototype.$students = db;
