@@ -24,6 +24,7 @@ Vue.use(VModal)
 /* eslint-disable no-new */
 
 // Vue.prototype.$students = db;
+console.log(getGlobal('config'));
 Vue.prototype.$config = getGlobal('config');
 // Vue.prototype.$dbDay = config;
 let v = new Vue({
