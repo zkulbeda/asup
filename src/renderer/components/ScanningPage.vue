@@ -63,11 +63,12 @@
     name: 'landing-page',
     components: {SystemInformation, QrcodeStream, StudentScanCard,CloseDayModel},
     data() {
+      let id = this.$config.get('deviceID');
       return {
         scans: [],
         paused: true,
         lastStudent: null,
-        deviceID: '',
+        deviceID: id,
         cameraFound: true,
         selected: null,
         error: null
@@ -79,7 +80,6 @@
           mandatory: {
             sourceId: this.deviceID//'4e8822da8628ebb83f14681db3d674c3495216b9f50ef64054f73c0b9301855f', //'0070d35198c8d70b1bdabb12f7953c7fbc117bfc096424c20dac86476ed75bdb',
           },
-          optional: []
         };
       },
       camera() {
@@ -98,7 +98,6 @@
       Mousetrap.unbind('space');
     },
     mounted(){
-      //if(!this.$config.has('deviceID')) this.selectCamera();
     },
     methods: {
       selectCamera(){
@@ -117,7 +116,8 @@
                 this.paused = true;
                 return 0;
               }
-              this.$config.set(d[res].deviceId);
+              this.$config.set('deviceID',d[res].deviceId);
+              this.deviceID = d[res].deviceId;
               this.paused = false;
             });
           });
@@ -164,11 +164,11 @@
             // passed constraints don't match any camera.
             // Did you requested the front camera although there is none?
           } else {
-            console.log(error);
 
           }
+          console.log(error);
         } finally {
-          if(!this.paused) this.cameraFound = false;
+          //if(!this.paused) this.cameraFound = false;
           // hide loading indicator
         }
       },

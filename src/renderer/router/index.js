@@ -21,6 +21,11 @@ export default new Router({
       component: require('@/components/CreateReport').default
     },
     {
+      path: '/create-student',
+      name: 'create-student-page',
+      component: require('@/components/AddStudent').default
+    },
+    {
       path: '*',
       redirect: '/ScanningPage'
     }

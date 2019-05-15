@@ -1,5 +1,8 @@
 <template>
-  <b-table :items="it" :fields="fields"></b-table>
+  <div>
+    <b-table :items="it" :fields="fields"></b-table>
+    <router-link to="/create-student">fvdfv</router-link>
+  </div>
 </template>
 
 <script>
