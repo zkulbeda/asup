@@ -48,5 +48,8 @@
   #currentPage{
     padding: 15px;
   }
+  .custom-control-label{
+    cursor: pointer;
+  }
   /* CSS */
 </style>

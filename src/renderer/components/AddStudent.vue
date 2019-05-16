@@ -15,9 +15,12 @@
                                 if="name"
                                 v-model="name"
                                 required
-                        >
-
-                        </b-form-input>
+                                :state="!validation.isTouched('name')?null:!validation.hasError('name')"
+                        ></b-form-input>
+                        <b-form-invalid-feedback
+                                :state="!validation.isTouched('name')?null:!validation.hasError('name')">
+                            {{validation.firstError('name')}}
+                        </b-form-invalid-feedback>
                     </b-form-group>
                     <b-form-group
                             id="class-group"
@@ -28,12 +31,16 @@
                     >
                         <b-form-input
                                 if="class"
-                                v-model="name"
+                                v-model.lazy="group"
                                 required
                                 list="listOfClasses"
-                        >
-
-                        </b-form-input>
+                                :formatter="classFormat"
+                                :state="!validation.isTouched('group')?null:!validation.hasError('group')"
+                        ></b-form-input>
+                        <b-form-invalid-feedback
+                                :state="!validation.isTouched('group')?null:!validation.hasError('group')">
+                            {{validation.firstError('group')}}
+                        </b-form-invalid-feedback>
                         <b-form-datalist :options="options" id="listOfClasses">
                         </b-form-datalist>
                     </b-form-group>
@@ -58,8 +65,9 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <b-button variant="primary" type="submit">Добавить</b-button>
                             <b-form-checkbox
-                                v-model="addMore"
-                            >Добавить ещё</b-form-checkbox>
+                                    v-model="addMore"
+                            >Добавить ещё
+                            </b-form-checkbox>
                         </div>
                     </b-form-group>
                 </b-form>
@@ -69,14 +77,38 @@
 </template>
 
 <script>
+    import Vue from "vue";
+    import SimpleVueValidation from 'simple-vue-validator';
+
+    Vue.use(SimpleVueValidation);
+    import msgs from './validation.js';
+
+    SimpleVueValidation.extendTemplates(msgs);
+    const Validator = SimpleVueValidation.Validator;
     export default {
         name: "AddStudent",
         data: () => ({
             name: '',
+            group: '',
             paysVal: false,
             addMore: false,
-            options: ['10Б', '10A','11Б']
-        })
+            options: ['10Б', '10A', '11Б']
+        }),
+        validators: {
+            name(v) {
+                return Validator.value(v).required();
+            },
+            group: {
+                validator(v) {
+                    return Validator.value(v).required().regex(/(1[0-1]|[5-9])[А-Я]/, "Формат класса: число от 5 до 11 и буква без пробела")
+                }
+            },
+        },
+        methods: {
+            classFormat(v) {
+                return v.toUpperCase();
+            }
+        }
     }
 </script>
 
