@@ -62,7 +62,7 @@ promiseIpc.on('getMonths', (e) => {
 
 let generateWS = (wb, shotname, name, st, data, stCell) => {
   let styleCentered = {alignment: {horizontal: 'center', vertical: 'center'}};
-  let styleRight = merge({}, styleCentered, {alignment: {horizontal: 'right', intend: 1}});
+  let styleRight = merge({}, styleCentered, {alignment: {horizontal: 'right', indent: 1}});
   let border = {
     border: {
       left: {
@@ -151,14 +151,14 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
     });
     last++;
   }
-  ws.cell(last, 1).string("Сумма").style(styleCentered).style(stTableH);
+  ws.cell(last, 1).string("Сумма").style(styleRight).style(stTableH);
   for (let i = 0; i < data.length; i++) {
     ws.cell(last, 2 + i).formula('SUM(' + xl.getExcelCellRef(4, 2 + i) + ":" + xl.getExcelCellRef(last - 1, 2 + i) + ")").style(dem);
   }
   ws.cell(last, 2 + data.length).formula('SUM(' + xl.getExcelCellRef(4, 2 + data.length) + ":" + xl.getExcelCellRef(last - 1, 2 + data.length) + ")").style(border).style(dem);
   last++;
 
-  ws.cell(last, 1).string("Количество").style(styleCentered).style(stTableH).style(dem);
+  ws.cell(last, 1).string("Количество").style(styleRight).style(stTableH).style(dem);
   for (let i = 0; i < data.length; i++) {
     ws.cell(last, 2 + i).formula('COUNT(' + xl.getExcelCellRef(4, 2 + i) + ":" + xl.getExcelCellRef(last - 2, 2 + i) + ")").style(dem);
   }

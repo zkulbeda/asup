@@ -12,9 +12,7 @@
         </div>
       </b-col>
       <b-col>
-        <div class="card" id="currentPage">
          <router-view></router-view>
-        </div>
       </b-col>
     </b-row>
   </b-container>
@@ -27,7 +25,7 @@
     name: 'qr-lunch',
     methods:{
     },
-    beforeMount() {
+    beforeCreate() {
         window.t = this;
      this.$store.dispatch('Students/init');
       this.$store.dispatch('ThisDay/init');

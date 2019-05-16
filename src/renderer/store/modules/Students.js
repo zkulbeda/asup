@@ -21,10 +21,10 @@ const mutations = {
         }else state.initialized = true;
     },
     setStudents(state, pl){
-        state.students = keyBy(pl, 'id');
+        state.students = keyBy(pl, '_id');
     },
     addStudent(state, pl){
-        state.students[pl.id] = pl;
+        state.students[pl._id] = pl;
     },
     test(){
 
@@ -34,8 +34,10 @@ const mutations = {
 const actions = {
     async init({dispatch, commit}) {
         commit('init');
+        console.log('init');
         await db.loadDatabase();
         await dispatch('refreshStudents');
+        console.log('done');
         return db;
     },
     async refreshStudents({commit}){
@@ -44,7 +46,7 @@ const actions = {
         return res;
     },
     async insertStudent({commit},pl){
-        let newStudent = await db.insert({name: pl.name, group: pl.group, pays: pl.pays});
+        let newStudent = await db.insert({name: pl.name, group: pl.group, pays: Boolean(pl.pays)});
         commit('addStudent', newStudent);
         return newStudent;
     },
@@ -55,7 +57,7 @@ const actions = {
         }
     },
     async record({dispatch, commit},{id, img}){
-        let st = await db.findOne({id});
+        let st = await db.findOne({_id: id});
         if(st === null) throw {'message':'Ученик не найден'};
         let rd = await dispatch('ThisDay/addStudent', {...st, img}, {root:true});
         return {st, rd};

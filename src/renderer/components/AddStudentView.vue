@@ -2,11 +2,11 @@
     <b-card style="max-width: 600px;">
         <b-row>
             <b-col class="">
-                <h3 class="mb-4 text-center">Создание карты питания ученика</h3>
-                <b-form>
+                <h3 class="mb-4 mt-2 text-center">Создание карты питания ученика</h3>
+                <b-form @submit="end" @submit.stop.prevent>
                     <b-form-group
                             id="name-group"
-                            label="Имя ученика: "
+                            label="ФИО ученика: "
                             label-for="name"
                             label-cols="3"
                             label-align="right"
@@ -41,8 +41,6 @@
                                 :state="!validation.isTouched('group')?null:!validation.hasError('group')">
                             {{validation.firstError('group')}}
                         </b-form-invalid-feedback>
-                        <b-form-datalist :options="options" id="listOfClasses">
-                        </b-form-datalist>
                     </b-form-group>
                     <b-form-group
                             id="pays-group"
@@ -63,7 +61,7 @@
                             label-cols="3"
                     >
                         <div class="d-flex justify-content-between align-items-center">
-                            <b-button variant="primary" type="submit">Добавить</b-button>
+                            <b-button variant="primary" type="submit" @click="check">Добавить</b-button>
                             <b-form-checkbox
                                     v-model="addMore"
                             >Добавить ещё
@@ -92,7 +90,6 @@
             group: '',
             paysVal: false,
             addMore: false,
-            options: ['10Б', '10A', '11Б']
         }),
         validators: {
             name(v) {
@@ -100,11 +97,29 @@
             },
             group: {
                 validator(v) {
-                    return Validator.value(v).required().regex(/(1[0-1]|[5-9])[А-Я]/, "Формат класса: число от 5 до 11 и буква без пробела")
+                    return Validator.value(v).required().regex(/^(1[0-1]|[5-9])([А-Я])$/, "Формат класса: число от 5 до 11 и буква без пробела")
                 }
             },
         },
         methods: {
+            check(){
+                this.name = this.name || '';
+                this.group = this.group || '';
+            },
+            async end(){
+                let res = await this.$validate();
+                if(res===false){
+                    this.check();
+                }
+                await this.$store.dispatch('Students/insertStudent', {
+                    name: this.name,
+                    group: this.group,
+                    pays: this.paysVal
+                });
+                if(this.addMore){
+                    this.group = this.name = ''; this.paysVal = false; this.validation.reset();
+                }
+            },
             classFormat(v) {
                 return v.toUpperCase();
             }
