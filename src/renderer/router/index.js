@@ -26,6 +26,11 @@ export default new Router({
       component: require('@/components/AddStudentView').default
     },
     {
+      path: '/print-student-card',
+      name: 'print-student-card-page',
+      component: require('@/components/PrintCardView').default
+    },
+    {
       path: '*',
       redirect: '/ScanningPage'
     }

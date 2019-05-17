@@ -27,8 +27,8 @@
     <div class="d-flex  justify-content-between align-items-center">
       <div>
       <div v-if="selectMode" class="d-flex justify-content-start align-items-baseline">
-        <b-dropdown split @click="alert('hjkl')" size="sm" id="dropdown-1" text="Печать" class="mr-2">
-          <b-dropdown-item>Распечатать</b-dropdown-item>
+        <b-dropdown split @click="print" size="sm" id="dropdown-1" text="Печать" class="mr-2">
+          <b-dropdown-item @click="print">Распечатать</b-dropdown-item>
           <b-dropdown-item>Удалить</b-dropdown-item>
           <b-dropdown-divider></b-dropdown-divider>
           <b-dropdown-item>Выделить все</b-dropdown-item>
@@ -98,6 +98,9 @@
       this.$refs.input.$el.focus();
     },
     methods:{
+      print(){
+        this.$router.go('/print-student-card');
+      },
       rowClick(){
         console.log(arguments)
       },
