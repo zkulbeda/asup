@@ -1,4 +1,5 @@
 <template>
+  <b-card>
   <b-container style="position: relative;">
     <template v-if="$store.state.ThisDay.started && !$store.state.ThisDay.ended">
       <b-row>
@@ -46,6 +47,7 @@
     </b-row>
     <CloseDayModel></CloseDayModel>
   </b-container>
+  </b-card>
 </template>
 
 <script>

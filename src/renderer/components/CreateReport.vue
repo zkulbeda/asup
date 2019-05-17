@@ -1,5 +1,5 @@
 <template>
-  <div v-show="!loading">
+  <b-card v-show="!loading">
     <b-row>
     <b-col class="text-center CreateReportPage">
       <div class="">
@@ -12,7 +12,7 @@
       </div>
     </b-col>
     </b-row>
-  </div>
+  </b-card>
 </template>
 
 <script>

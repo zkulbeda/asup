@@ -23,7 +23,7 @@ export default new Router({
     {
       path: '/create-student',
       name: 'create-student-page',
-      component: require('@/components/AddStudent').default
+      component: require('@/components/AddStudentView').default
     },
     {
       path: '*',
