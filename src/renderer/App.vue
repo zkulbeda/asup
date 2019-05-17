@@ -28,8 +28,8 @@
     methods:{
     },
     beforeMount() {
-        window.t = this;
-     this.$store.dispatch('Students/init');
+      window.t = this;
+      this.$store.dispatch('Students/init');
       this.$store.dispatch('ThisDay/init');
     }
   }
