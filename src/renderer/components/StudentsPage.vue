@@ -99,7 +99,7 @@
     },
     methods:{
       print(){
-        this.$router.go('/print-student-card');
+        this.$router.push('/print-student-card');
       },
       rowClick(){
         console.log(arguments)
