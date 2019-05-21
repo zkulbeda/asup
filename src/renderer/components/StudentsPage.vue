@@ -162,7 +162,14 @@
         fs.writeFileSync(path.join(app.getPath('temp'),'./print.pdf'), data,'base64');
         shell.openExternal('file://'+path.join(app.getPath('temp'),'./print.pdf'));
       },
-      rowClick(){
+      rowClick(d){
+        let i = this.selected.indexOf(d._id);
+        if(i==-1){
+          this.selected.push(d._id);
+        }
+        else{
+          this.selected.splice(i, 1);
+        }
         console.log(arguments);
       },
       clearSelected(){
@@ -206,6 +213,9 @@
     padding-right: 0px !important;
     opacity: 0;
     transition: opacity 0.2s ease-in-out;
+  }
+  table.table-select-mode tr{
+    cursor: pointer;
   }
   table:not(.table-select-mode) tr:hover .table-checkbox {
     opacity: 0.5;
