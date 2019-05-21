@@ -12,12 +12,7 @@
 </template>
 
 <script>
-    import {ipcRenderer, remote} from 'electron'
-    import {DateTime} from 'luxon';
-    import jsPDF from 'jspdf';
-    import qr from 'qrcode';
     import promiseIpc from 'electron-promise-ipc';
-    let {BrowserWindow, getGlobal} = remote;
 
     export default {
         name: "CreateReport",
@@ -48,29 +43,7 @@
             }
         },
         methods: {
-            save() {
-                var doc = new jsPDF();
-                doc.text('Hello world! sdf ddf g gg rr jj v', 2, 5, {maxWidth: 44});
-                qr.toDataURL('I am a pony!', {
-                    margin: 1,
-                    width: 49
-                }).then((url) => {
-                    doc.rect(0,0,50,90);
-                    doc.addImage(url, 'PNG', 0, 20, 49,49);
-                    // doc.save('a4.pdf');
-                    let st = doc.output('datauristring');
-                    // let u = URL.createObjectURL(st);
-                    // console.log(u);
-                    let w = new BrowserWindow({
-                        parent: getGlobal('mainWindow'),
-                        modal: true,
-                        webPreferences:{
-                            plugins: true,
-                        }
-                    });
-                    w.loadURL(st);
-                });
-            }
+
         },
         mounted() {
             console.log(promiseIpc);

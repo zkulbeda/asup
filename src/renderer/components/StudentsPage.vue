@@ -1,5 +1,5 @@
 <template>
-  <b-card>
+  <b-card ref="main">
     <h4 class="mb-4">Список учеников<router-link to="/create-student" class="btn btn-outline-primary btn-sm" style="
     float: right;
 ">Добавить ученика</router-link>
@@ -27,9 +27,10 @@
     <div class="d-flex  justify-content-between align-items-center">
       <div>
       <div v-if="selectMode" class="d-flex justify-content-start align-items-baseline">
-        <b-dropdown split @click="print" size="sm" id="dropdown-1" text="Печать" class="mr-2">
+        <b-dropdown split @click="savePDF" size="sm" id="dropdown-1" text="Печать в PDF" class="mr-2">
           <b-dropdown-item @click="print">Распечатать</b-dropdown-item>
           <b-dropdown-item>Удалить</b-dropdown-item>
+          <b-dropdown-item>Изменить индефикатор</b-dropdown-item>
           <b-dropdown-divider></b-dropdown-divider>
           <b-dropdown-item>Выделить все</b-dropdown-item>
           <b-dropdown-item @click="clearSelected">Убрать выделение</b-dropdown-item>
@@ -51,10 +52,23 @@
 </template>
 
 <script>
+  import {remote} from 'electron'
+  let {BrowserWindow, getGlobal, app, shell} = remote;
+  import MontFont from '@/assets/fonts/Mont-Regular.ttf';
+  import MontBoldFont from '@/assets/fonts/Mont-Bold.ttf';
+  import MontLightFont from '@/assets/fonts/Mont-Light.ttf';
+  import jsPDF from 'jspdf';
+  import qr from 'qrcode';
+  import path from 'path';
+  import fs from 'fs'
   import values from 'lodash/values';
   import Vue from 'vue'
   import VueFuse from 'vue-fuse'
-  Vue.use(VueFuse)
+  Vue.use(VueFuse);
+  let addMontFont = (d,m,t)=>{
+    d.addFileToVFS('mont'+t+'.ttf',m.split(',')[1]);
+    d.addFont('mont'+t+'.ttf','mont',t);
+  }
   export default {
     name: "StudentsPage",
     data() {
@@ -98,11 +112,58 @@
       this.$refs.input.$el.focus();
     },
     methods:{
-      print(){
-        this.$router.push('/print-student-card');
+      async generatePDF(){
+        let doc = new jsPDF();
+        addMontFont(doc,MontBoldFont,'bold')
+        addMontFont(doc,MontLightFont,'light')
+        addMontFont(doc,MontFont,'regular')
+        let insertCard = async (doc, x, y, name,id,pays)=>{
+          doc.setFont('mont', 'bold');
+          doc.setFontSize(14);
+          doc.text('Карта ученика', x+25, y+6, {maxWidth: 47,align: 'center'});
+          doc.setFontSize(7);
+          doc.setFont('mont', 'regular');
+          doc.text(name, x+25, y+10, {align: 'center'});
+          let q = await qr.toDataURL(id, {errorCorrectionLevel: 'Q', margin: 0, width: 200});
+          //this.$refs.main.appendChild(q);
+          //let qq = await qr.toCanvas(id, {width: 48,type: 'svg', errorCorrectionLevel: 'Q', margin: 0}).toDataURL();
+          doc.rect(x+0,y+0,50 ,95);
+          //doc.addSvg('<'+q.split('><')[2]+'>', x+1, y+11, 48,48);
+          doc.addImage(q,'PNG',x+3, y+12, 44,44)
+          doc.setFontSize(11);
+          doc.setFont('mont', 'bold');
+          doc.text((pays?'':'бес')+'платное питание', x+25, y+62, {maxWidth: 47,align: 'center'});
+          return doc;
+        }
+        let i = 0, j = 0;
+        for(let st in this.selected){
+          let stInfo = this.$store.state.Students.students[this.selected[st]];
+          await insertCard(doc,5+j*50,5+i*95, stInfo.name,stInfo._id, stInfo.pays);
+          j++;
+          if(j>3){
+            j = 0;
+            i++;
+          }
+          if(i>3){
+            doc.addPage();
+            i = 0; j = 0;
+          }
+        }
+        return doc;
+      },
+      async savePDF() {
+        let doc = await this.generatePDF();
+        doc.save('Карты питания.pdf');
+      },
+      async print(){
+        let doc = await this.generatePDF();
+        doc.autoPrint();
+        let data = doc.output('datauristring').split(',')[1];
+        fs.writeFileSync(path.join(app.getPath('temp'),'./print.pdf'), data,'base64');
+        shell.openExternal('file://'+path.join(app.getPath('temp'),'./print.pdf'));
       },
       rowClick(){
-        console.log(arguments)
+        console.log(arguments);
       },
       clearSelected(){
         this.selected = [];
