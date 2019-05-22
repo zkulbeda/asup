@@ -102,6 +102,7 @@
         let res = await this.$validate();
         if(res===false){
           this.check();
+          return;
         }
         this.close();
         this.$store.dispatch('ThisDay/closeSession', {

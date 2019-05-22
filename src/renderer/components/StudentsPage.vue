@@ -19,7 +19,12 @@
         :class="{'table-select-mode': selectMode}"
         @row-clicked="rowClick"
         show-empty
+        :sort-by.sync="sortBy"
+        :sort-desc.sync="sortDesc"
     >
+      <template slot="empty" slot-scope="scope">
+        <p class="text-center">Ученики не найдены. Проверьте ваш запрос.</p>
+      </template>
       <template slot="checkbox" slot-scope="data" class="table-checkbox">
         <b-form-checkbox v-model="selected" :value="data.item._id" :key="data.item._id"></b-form-checkbox>
       </template>
@@ -32,7 +37,8 @@
           <b-dropdown-item>Удалить</b-dropdown-item>
           <b-dropdown-item>Изменить индефикатор</b-dropdown-item>
           <b-dropdown-divider></b-dropdown-divider>
-          <b-dropdown-item>Выделить все</b-dropdown-item>
+          <b-dropdown-item @click="toggleViewMode">{{viewSelected?'Вернуть нормальный режим':'Показать только выделеные'}}</b-dropdown-item>
+          <b-dropdown-item v-if="!viewSelected">Выделить все</b-dropdown-item>
           <b-dropdown-item @click="clearSelected">Убрать выделение</b-dropdown-item>
         </b-dropdown>
         <div> {{selected.length}} элементов</div>
@@ -77,6 +83,8 @@
         currentPage: 1,
         selected: [],
         perPage: 10,
+        sortBy: 'name',
+        sortDesc: false,
         fields: {
           checkbox:{
             sortable: false,
@@ -97,12 +105,18 @@
           // }
         },
         query: '',
+        viewSelected: false,
         isBusy: false
       }
     },
     computed: {
       it() {
-        return values(this.$store.state.Students.students);
+        let res = values(this.$store.state.Students.students);
+        if(this.viewSelected){
+          if(this.selected.length<1) this.viewSelected=false;
+          else res = res.filter((e)=>this.selected.indexOf(e._id)!==-1);
+        }
+        return res;
       },
       selectMode(){
         return this.selected.length>0;
@@ -112,6 +126,9 @@
       this.$refs.input.$el.focus();
     },
     methods:{
+      toggleViewMode(){
+        this.viewSelected = !this.viewSelected;
+      },
       async generatePDF(){
         let doc = new jsPDF();
         addMontFont(doc,MontBoldFont,'bold')
@@ -177,6 +194,11 @@
       },
       async founded(){
         if(this.query!==''){
+          this.sortBy = '';
+          if(this.query.match(/^(1[0-1]|[5-9])([А-я])?$/)){
+            let s = this.query.toUpperCase();
+            return this.it.filter((e)=>e.group.includes(s));
+          }
           let i = await this.$search(this.query,this.it,{
             keys: ['name','group'],
             shouldSort: true,
@@ -190,6 +212,8 @@
           this.currentPage = 1;
           return i;
         }else {
+          this.sortBy = 'name';
+          this.sortDesc = false;
           this.size = this.it.length;
           this.currentPage = 1;
           return this.it;
