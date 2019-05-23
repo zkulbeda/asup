@@ -1,11 +1,17 @@
 <template>
   <b-card ref="main">
-    <h4 class="mb-4">Список учеников<router-link to="/create-student" class="btn btn-outline-primary btn-sm" style="
+    <h4 class="mb-4">Список учеников
+      <router-link to="/create-student" class="btn btn-outline-primary btn-sm btn-with-icon" style="
     float: right;
-">Добавить ученика</router-link>
+"><AdAccIcon></AdAccIcon>Добавить ученика</router-link>
     </h4>
     <b-form-group>
-      <b-form-input ref="input" v-model="query" placeholder="Поиск..."></b-form-input>
+      <b-input-group>
+        <b-form-input ref="input" v-model="query" placeholder="Поиск..."></b-form-input>
+        <b-input-group-append>
+          <b-button variant="outline-secondary" class="StudentPageScanIcon" @click="openScanModal"><QrIcon decorative></QrIcon></b-button>
+        </b-input-group-append>
+      </b-input-group>
     </b-form-group>
     <b-table
         ref="table"
@@ -32,13 +38,16 @@
     <div class="d-flex  justify-content-between align-items-center">
       <div>
       <div v-if="selectMode" class="d-flex justify-content-start align-items-baseline">
-        <b-dropdown split @click="savePDF" size="sm" id="dropdown-1" text="Печать в PDF" class="mr-2">
+        <b-dropdown split @click="savePDF" size="sm" id="dropdown-1" class="mr-2 btn-with-icon">
+          <template slot="button-content" class="dropdown-with-icon">
+            <FileDownloadIcon></FileDownloadIcon>Печать в PDF
+          </template>
           <b-dropdown-item @click="print">Распечатать</b-dropdown-item>
           <b-dropdown-item>Удалить</b-dropdown-item>
-          <b-dropdown-item>Изменить индефикатор</b-dropdown-item>
+          <b-dropdown-item>Изменить идентификатор</b-dropdown-item>
           <b-dropdown-divider></b-dropdown-divider>
           <b-dropdown-item @click="toggleViewMode">{{viewSelected?'Вернуть нормальный режим':'Показать только выделеные'}}</b-dropdown-item>
-          <b-dropdown-item v-if="!viewSelected">Выделить все</b-dropdown-item>
+          <b-dropdown-item v-if="!viewSelected" @click="addAll">Выделить все{{query.length>0?' найденные':''}}</b-dropdown-item>
           <b-dropdown-item @click="clearSelected">Убрать выделение</b-dropdown-item>
         </b-dropdown>
         <div> {{selected.length}} элементов</div>
@@ -54,6 +63,7 @@
                     class="mb-0"
       ></b-pagination>
     </div>
+    <ScanningStudentCardModel :detect="detect"></ScanningStudentCardModel>
   </b-card>
 </template>
 
@@ -70,6 +80,10 @@
   import values from 'lodash/values';
   import Vue from 'vue'
   import VueFuse from 'vue-fuse'
+  import QrIcon from 'icons/QrcodeScan';
+  import AdAccIcon from 'icons/AccountPlus';
+  import FileDownloadIcon from 'icons/FileDownload';
+  import ScanningStudentCardModel from './ScanningStudentCardModel';
   Vue.use(VueFuse);
   let addMontFont = (d,m,t)=>{
     d.addFileToVFS('mont'+t+'.ttf',m.split(',')[1]);
@@ -77,6 +91,7 @@
   }
   export default {
     name: "StudentsPage",
+    components:{FileDownloadIcon, QrIcon,ScanningStudentCardModel,AdAccIcon},
     data() {
       return {
         size: 0,
@@ -115,6 +130,7 @@
         if(this.viewSelected){
           if(this.selected.length<1) this.viewSelected=false;
           else res = res.filter((e)=>this.selected.indexOf(e._id)!==-1);
+          console.log(this.viewSelected);
         }
         return res;
       },
@@ -124,10 +140,24 @@
     },
     mounted(){
       this.$refs.input.$el.focus();
+      if(this.$route.query.selected){
+        this.selected = this.$route.query.selected.filter((e)=>this.$store.state.Students.students[e]!==undefined);
+        this.viewSelected = true;
+      }
     },
     methods:{
+      async detect(d){
+        let r = this.$store.dispatch('Students/find', d);
+        if(r===false) return false;
+        if(this.selected.indexOf(d)===-1) this.selected.push(d);
+        this.viewSelected = true;
+      },
+      openScanModal(){
+        this.$modal.show('scanning-student-card');
+      },
       toggleViewMode(){
         this.viewSelected = !this.viewSelected;
+        if(this.viewSelected) this.query = '';
       },
       async generatePDF(){
         let doc = new jsPDF();
@@ -192,6 +222,14 @@
       clearSelected(){
         this.selected = [];
       },
+      async addAll(){
+        let l = await this.founded();
+        l.forEach((e)=>{
+          if(this.selected.indexOf(e._id)===-1){
+            this.selected.push(e._id);
+          }
+        })
+      },
       async founded(){
         if(this.query!==''){
           this.sortBy = '';
@@ -232,6 +270,35 @@
 </script>
 
 <style>
+  .dropdown-with-icon .material-design-icon{
+    font-size: 20px;
+    top: 2px;
+    left: 7px;
+    position: absolute;
+  }
+  .dropdown-with-icon:first-child{
+    padding-left: 32px;
+    position: relative;
+  }
+  .btn-with-icon.btn-sm .material-design-icon{
+    font-size: 20px;
+    top: 2px;
+    left: 7px;
+    position: absolute;
+  }
+  .btn-with-icon.btn-sm{
+    padding-left: 32px;
+    position: relative;
+  }
+  .StudentPageScanIcon{
+    padding: 1px 6px!important;
+    font-size: 24px!important;
+    line-height: 0!important;
+    border-color: #ced4da!important;
+  }
+  .StudentPageScanIcon svg{
+    bottom: 0!important;
+  }
   .table-checkbox{
     width: 30px;
     padding-right: 0px !important;

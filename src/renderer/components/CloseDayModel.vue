@@ -1,5 +1,5 @@
 <template>
-  <modal name="closeDay" :width="400" height="auto" :adaptive="true">
+  <modal name="closeDay" :width="400" height="auto" :adaptive="true" @opened="$emit('opened')" @before-close="$emit('closed')">
     <div class="CloseDayModal">
       <CloseIcon class="CloseIcon" @click="close"></CloseIcon>
       <h3>Закрытие дня</h3>

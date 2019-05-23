@@ -61,7 +61,8 @@
               label-cols="3"
           >
             <div class="d-flex justify-content-between align-items-center">
-              <b-button @click="check" type="submit" variant="primary">Добавить</b-button>
+              <b-button v-if="!isCanEndAdding" @click="check" type="submit" variant="primary">Добавить{{added.length>0&&!addMore?' и закончить добавление':''}}</b-button>
+              <b-button v-else @click="endAdding" variant="primary">Закончить добавление</b-button>
               <b-form-checkbox
                   v-model="addMore"
               >Добавить ещё
@@ -91,6 +92,12 @@
         group: null,
         paysVal: false,
         addMore: false,
+        added: []
+      }
+    },
+    computed:{
+      isCanEndAdding(){
+        return this.added.length>0 && !this.addMore && (!this.validation.isTouched('name') || this.validation.hasError());
       }
     },
     validators: {
@@ -114,11 +121,12 @@
           this.check();
           return;
         }
-        await this.$store.dispatch('Students/insertStudent', {
+        let st = await this.$store.dispatch('Students/insertStudent', {
           name: this.name,
           group: this.group,
           pays: this.paysVal
         });
+        this.added.push(st._id);
         if (this.addMore) {
           this.name = null;
           this.paysVal = false;
@@ -126,8 +134,11 @@
           let temp = this.group;
           this.group = ''; this.$nextTick(()=>{this.group = temp;});
         }else{
-          this.$router.push('/students');
+          this.endAdding();
         }
+      },
+      endAdding(){
+        this.$router.push({path: '/students',query:{selected: this.added}});
       },
       classFormat(v) {
         return v.toUpperCase();

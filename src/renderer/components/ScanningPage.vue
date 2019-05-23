@@ -14,7 +14,7 @@
               <h4>Камера не найдена</h4>
               <b-button class="btn-primary">Повторить поиск</b-button>
             </div>
-            <QrcodeStream :camera="camera" @detect="onDetect" @init="onInit" :paused="paused"></QrcodeStream>
+            <Camera @detect="onDetect" @init="onInit" v-model="paused"></Camera>
             <div class="ScanningPageCameraHelp" :class="{paused: paused}">Нажмите пробел, <br v-if="paused"/>чтобы {{paused?'возобновить':'остановить'}} сканирование</div>
             <div class="ScanningPageCameraHelpBG" :class="{paused: paused}"></div>
           </div>
@@ -45,7 +45,7 @@
         <p>Следующий день можно будет открыть завтра.</p>
       </b-col>
     </b-row>
-    <CloseDayModel></CloseDayModel>
+    <CloseDayModel  @opened="beforeOpenModal" @closed="afterCloseModal"></CloseDayModel>
   </b-container>
   </b-card>
 </template>
@@ -53,17 +53,17 @@
 <script>
   import SystemInformation from './LandingPage/SystemInformation'
   //import CameraView from "./CameraView";
-  import QrcodeStream from './VueScan/components/QrcodeStream';
   import StudentScanCard from './StudentScanCard'
   import Mousetrap from'mousetrap';
   import fs from 'fs';
   import {DateTime} from 'luxon'
   import CloseDayModel from "@/components/CloseDayModel";
+  import Camera from './Camera';
   let {app, dialog} = require('electron').remote;
 
   export default {
     name: 'landing-page',
-    components: {SystemInformation, QrcodeStream, StudentScanCard,CloseDayModel},
+    components: {SystemInformation, StudentScanCard,CloseDayModel,Camera},
     data() {
       let id = this.$config.get('deviceID');
       return {
@@ -73,7 +73,8 @@
         deviceID: id,
         cameraFound: true,
         selected: null,
-        error: null
+        error: null,
+        MousetrapSpace: false
       }
     },
     computed: {
@@ -97,33 +98,12 @@
       }
     },
     beforeDestroy(){
-      Mousetrap.unbind('space');
+      this.MousetrapSpace = false;
     },
     mounted(){
+      this.MousetrapSpace = true;
     },
     methods: {
-      selectCamera(){
-        navigator.mediaDevices.enumerateDevices()
-          .then((devices)=>{
-            console.log(devices);
-            let d = devices.filter((e)=>e.kind ==='videoinput');
-            dialog.showMessageBox({
-              type: "question",
-              title:"Подключено несколько камер",
-              detail: "Выберите камеру:",
-              buttons: d.map((d)=>d.label),
-              cancelId: -1,
-            }, (res)=>{
-              if(res==-1) {
-                this.paused = true;
-                return 0;
-              }
-              this.$config.set('deviceID',d[res].deviceId);
-              this.deviceID = d[res].deviceId;
-              this.paused = false;
-            });
-          });
-      },
       viewCard(i){
           this.selected = i;
           this.error = null;
@@ -149,36 +129,18 @@
           console.log(error);
         }
       },
-      async onInit(promise) {
-        Mousetrap.bind('space', ()=>{this.toggle(); return false;});
-        try {
-          await promise
-          // successfully initialized
-        } catch (error) {
-          console.error(error)
-          if (error.name === 'NotFoundError') {
-
-          } else if (error.name === 'NotReadableError') {
-            // maybe camera is already in use
-          } else if (error.name === 'OverconstrainedError') {
-            this.paused = true;
-            this.selectCamera();
-            // passed constraints don't match any camera.
-            // Did you requested the front camera although there is none?
-          } else {
-
-          }
-          console.log(error);
-        } finally {
-          //if(!this.paused) this.cameraFound = false;
-          // hide loading indicator
-        }
-      },
       openThisDay() {
         this.$store.dispatch('ThisDay/startSession')
       },
       decode(data) {
 
+      },
+      beforeOpenModal(){
+        this.MousetrapSpace = false;
+        this.paused = true;
+      },
+      afterCloseModal(){
+        this.MousetrapSpace = true;
       },
       closeDay(){
         // dialog.showMessageBox({
@@ -214,6 +176,14 @@
     filters:{
       formatTime(time){
         return DateTime.fromJSDate(time).toLocaleString(DateTime.TIME_24_WITH_SECONDS);
+      }
+    },
+    watch:{
+      MousetrapSpace(n,o){
+        if(n){
+          Mousetrap.bind('space', this.toggle);
+        }else{
+          Mousetrap.unbind('space');}
       }
     }
   }

@@ -56,6 +56,11 @@ const actions = {
             commit('addStudent', newStudent);
         }
     },
+    async find({},id){
+        let st = await db.findOne({_id: id});
+        if(st === null) return false;
+        return st;
+    },
     async record({dispatch, commit},{id, img}){
         let st = await db.findOne({_id: id});
         if(st === null) throw {'message':'Ученик не найден'};
