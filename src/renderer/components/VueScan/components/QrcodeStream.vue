@@ -87,7 +87,7 @@
              */
             scanInterval() {
                 if (this.track === false) {
-                    return 500;
+                    return 100;
                 } else {
                     return 50; // ~ 25fps
                 }

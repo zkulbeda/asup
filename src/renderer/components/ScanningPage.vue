@@ -19,13 +19,17 @@
             <div class="ScanningPageCameraHelpBG" :class="{paused: paused}"></div>
           </div>
         </b-col>
-        <b-col>
-          <b-list-group class="ScanningPageList">
+        <b-col v-bar class="vb" style="max-height: 300px">
+          <div>
+            <div>
+          <b-list-group  class="ScanningPageList">
             <b-list-group-item v-for="(qr,i) in scannedList" href="#" :active="i===selected" :key="i" @click="viewCard(i)">
               {{$store.state.Students.students[qr.id].name}}
               <span>{{qr.createdAt | formatTime}}</span>
             </b-list-group-item>
           </b-list-group>
+          </div>
+          </div>
         </b-col>
       </b-row>
       <b-button variant="outline-danger" class="ScanningPageCloseDay" @click="closeDay">Завершить день</b-button>
@@ -191,10 +195,10 @@
 
 <style>
   .ScanningPageList{
-    overflow-y: scroll;
-    position: absolute;
-    width: 97.5%;
-    height: 100%;
+    /*overflow-y: scroll;*/
+    /*position: absolute;*/
+    /*width: 97.5%;*/
+    /*height: 100%;*/
   }
   .ScanningPageCameraError {
     position: absolute;
@@ -258,88 +262,49 @@
     top: 20px;
   }
 
-  @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro');
-
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  .vb > .vb-dragger {
+    z-index: 5;
+    width: 12px;
+    right: 0;
   }
 
-  body {
-    font-family: 'Source Sans Pro', sans-serif;
+  .vb > .vb-dragger > .vb-dragger-styler {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: rotate3d(0,0,0,0);
+    transform: rotate3d(0,0,0,0);
+    -webkit-transition:
+            background-color 100ms ease-out,
+            margin 100ms ease-out,
+            height 100ms ease-out;
+    transition:
+            background-color 100ms ease-out,
+            margin 100ms ease-out,
+            height 100ms ease-out;
+    background-color: rgba(48, 121, 244,.1);
+    margin: 5px 5px 5px 0;
+    border-radius: 20px;
+    height: calc(100% - 10px);
+    display: block;
   }
 
-  #wrapper {
-    background: radial-gradient(
-        ellipse at top left,
-        rgba(255, 255, 255, 1) 40%,
-        rgba(229, 229, 229, .9) 100%
-    );
-    height: 100vh;
-    padding: 60px 80px;
-    width: 100vw;
+  .vb.vb-scrolling-phantom > .vb-dragger > .vb-dragger-styler {
+    background-color: rgba(48, 121, 244,.3);
   }
 
-  #logo {
-    height: auto;
-    margin-bottom: 20px;
-    width: 420px;
+  .vb > .vb-dragger:hover > .vb-dragger-styler {
+    background-color: rgba(48, 121, 244,.5);
+    margin: 0px;
+    height: 100%;
   }
 
-  main {
-    display: flex;
-    justify-content: space-between;
+  .vb.vb-dragging > .vb-dragger > .vb-dragger-styler {
+    background-color: rgba(48, 121, 244,.5);
+    margin: 0px;
+    height: 100%;
   }
 
-  main > div {
-    flex-basis: 50%;
-  }
-
-  .left-side {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .welcome {
-    color: #555;
-    font-size: 23px;
-    margin-bottom: 10px;
-  }
-
-  .title {
-    color: #2c3e50;
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 6px;
-  }
-
-  .title.alt {
-    font-size: 18px;
-    margin-bottom: 10px;
-  }
-
-  .doc p {
-    color: black;
-    margin-bottom: 10px;
-  }
-
-  .doc button {
-    font-size: .8em;
-    cursor: pointer;
-    outline: none;
-    padding: 0.75em 2em;
-    border-radius: 2em;
-    display: inline-block;
-    color: #fff;
-    background-color: #4fc08d;
-    transition: all 0.15s ease;
-    box-sizing: border-box;
-    border: 1px solid #4fc08d;
-  }
-
-  .doc button.alt {
-    color: #42b983;
-    background-color: transparent;
+  .vb.vb-dragging-phantom > .vb-dragger > .vb-dragger-styler {
+    background-color: rgba(48, 121, 244,.5);
   }
 </style>

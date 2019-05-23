@@ -1,12 +1,15 @@
 import {adapterFactory} from "webrtc-adapter/src/js/adapter_factory.js";
 import { StreamApiNotSupportedError } from "./errors.js";
-import { imageDataFromVideo } from "./image-data.js";
 import { hasFired } from "./promisify.js";
 
 class Camera {
   constructor(videoEl, stream) {
     this.videoEl = videoEl;
     this.stream = stream;
+    this.canvas = document.createElement("canvas");
+    this.canvasCtx = this.canvas.getContext("2d");
+    this.canvas.height = videoEl.videoHeight;
+    this.canvas.width = videoEl.videoWidth;
   }
 
   stop() {
@@ -14,7 +17,8 @@ class Camera {
   }
 
   captureFrame() {
-    return imageDataFromVideo(this.videoEl);
+    this.canvasCtx.drawImage(this.videoEl, 0, 0, this.canvas.width, this.canvas.height);
+    return this.canvasCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
   }
 }
 

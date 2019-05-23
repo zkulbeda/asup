@@ -1,6 +1,5 @@
 import Vue from 'vue'
 import axios from 'axios'
-
 import App from './App'
 import router from './router'
 import store from './store'
@@ -19,7 +18,9 @@ Vue.config.productionTip = true//false
 Vue.config.devtools = true
 Vue.config.silent = true
 import VModal from 'vue-js-modal'
-Vue.use(VModal)
+Vue.use(VModal);
+import VueBar from 'vuebar';
+Vue.use(VueBar);
 //require('devtron').install()
 /* eslint-disable no-new */
 

@@ -9,7 +9,7 @@
       <b-input-group>
         <b-form-input ref="input" v-model="query" placeholder="Поиск..."></b-form-input>
         <b-input-group-append>
-          <b-button variant="outline-secondary" class="StudentPageScanIcon" @click="openScanModal"><QrIcon decorative></QrIcon></b-button>
+          <b-button variant="outline-secondary" class="btn-with-only-icon StudentPageScanIcon" @click="openScanModal"><QrIcon decorative></QrIcon></b-button>
         </b-input-group-append>
       </b-input-group>
     </b-form-group>
@@ -38,17 +38,21 @@
     <div class="d-flex  justify-content-between align-items-center">
       <div>
       <div v-if="selectMode" class="d-flex justify-content-start align-items-baseline">
-        <b-dropdown split @click="savePDF" size="sm" id="dropdown-1" class="mr-2 btn-with-icon">
-          <template slot="button-content" class="dropdown-with-icon">
-            <FileDownloadIcon></FileDownloadIcon>Печать в PDF
+        <b-dropdown split @click="savePDF" size="sm" id="dropdown-1" class="mr-2 dropdown-with-icon">
+          <template slot="button-content">
+            <FileDownloadIcon class="top-1px"></FileDownloadIcon>Печать в PDF
           </template>
-          <b-dropdown-item @click="print">Распечатать</b-dropdown-item>
-          <b-dropdown-item>Удалить</b-dropdown-item>
-          <b-dropdown-item>Изменить идентификатор</b-dropdown-item>
+          <b-dropdown-item @click="print"><PrinterIcon></PrinterIcon>Распечатать</b-dropdown-item>
+          <b-dropdown-item><DeleteIcon></DeleteIcon>Удалить</b-dropdown-item>
+          <b-dropdown-item><ReAddIcon></ReAddIcon>Изменить идентификатор</b-dropdown-item>
           <b-dropdown-divider></b-dropdown-divider>
-          <b-dropdown-item @click="toggleViewMode">{{viewSelected?'Вернуть нормальный режим':'Показать только выделеные'}}</b-dropdown-item>
-          <b-dropdown-item v-if="!viewSelected" @click="addAll">Выделить все{{query.length>0?' найденные':''}}</b-dropdown-item>
-          <b-dropdown-item @click="clearSelected">Убрать выделение</b-dropdown-item>
+          <b-dropdown-item @click="toggleViewMode">
+            <toNormalModeIcon v-if="viewSelected"></toNormalModeIcon>
+            <toOnlyCheckModeIcon v-else></toOnlyCheckModeIcon>
+            {{viewSelected?'Вернуть нормальный режим':'Показать только выделеные'}}
+          </b-dropdown-item>
+          <b-dropdown-item v-if="!viewSelected" @click="addAll"><CheckAllIcon></CheckAllIcon>Выделить все{{query.length>0?' найденные':''}}</b-dropdown-item>
+          <b-dropdown-item @click="clearSelected"><ClearCheckIcon></ClearCheckIcon>Убрать выделение</b-dropdown-item>
         </b-dropdown>
         <div> {{selected.length}} элементов</div>
       </div>
@@ -83,6 +87,13 @@
   import QrIcon from 'icons/QrcodeScan';
   import AdAccIcon from 'icons/AccountPlus';
   import FileDownloadIcon from 'icons/FileDownload';
+  import PrinterIcon from 'icons/Printer';
+  import DeleteIcon from 'icons/Delete';
+  import ReAddIcon from 'icons/AccountConvert';
+  import toNormalModeIcon from 'icons/FormatListChecks';
+  import toOnlyCheckModeIcon from 'icons/CheckboxMultipleMarked';
+  import CheckAllIcon from 'icons/CheckAll';
+  import ClearCheckIcon from 'icons/LayersOff';//CheckboxMultipleBlankOutline
   import ScanningStudentCardModel from './ScanningStudentCardModel';
   Vue.use(VueFuse);
   let addMontFont = (d,m,t)=>{
@@ -91,7 +102,8 @@
   }
   export default {
     name: "StudentsPage",
-    components:{FileDownloadIcon, QrIcon,ScanningStudentCardModel,AdAccIcon},
+    components:{FileDownloadIcon, QrIcon,ScanningStudentCardModel,AdAccIcon,PrinterIcon,DeleteIcon,ReAddIcon,
+      toNormalModeIcon,toOnlyCheckModeIcon,CheckAllIcon,ClearCheckIcon},
     data() {
       return {
         size: 0,
@@ -270,34 +282,53 @@
 </script>
 
 <style>
-  .dropdown-with-icon .material-design-icon{
+  .material-design-icon{
     font-size: 20px;
-    top: 2px;
+  }
+  .btn .material-design-icon{
+    top: 4px;
     left: 7px;
     position: absolute;
   }
-  .dropdown-with-icon:first-child{
+  .btn .material-design-icon.top-less{
+    top: 3px;
+  }
+  .dropdown-with-icon .btn:first-child{
     padding-left: 32px;
     position: relative;
   }
-  .btn-with-icon.btn-sm .material-design-icon{
-    font-size: 20px;
-    top: 2px;
-    left: 7px;
+  .btn.btn-with-icon{
+    padding-left: 32px;
+    position: relative;
+  }
+  .btn.btn-with-only-icon{
+    position: relative;
+    padding: 1px 6px;
+    display: flex;
+    align-items: center;
+  }
+  .btn.btn-with-only-icon .material-design-icon{
+    font-size: 24px;
+    line-height: 0!important;
+    position: relative;
+    top: 0;
+    left: 0;
+  }
+  .material-design-icon svg{
+    bottom: 0!important;
+  }
+  .dropdown.dropdown-with-icon .dropdown-menu .dropdown-item{
+    padding-left: 40px;
+    position: relative;
+  }
+  .dropdown.dropdown-with-icon .dropdown-menu .material-design-icon{
     position: absolute;
-  }
-  .btn-with-icon.btn-sm{
-    padding-left: 32px;
-    position: relative;
+    top: 6px;
+    left: 12px;
+    color: #495057;
   }
   .StudentPageScanIcon{
-    padding: 1px 6px!important;
-    font-size: 24px!important;
-    line-height: 0!important;
     border-color: #ced4da!important;
-  }
-  .StudentPageScanIcon svg{
-    bottom: 0!important;
   }
   .table-checkbox{
     width: 30px;

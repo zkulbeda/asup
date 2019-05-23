@@ -84,9 +84,9 @@ const actions = {
     let {id} = st;
     if (!state.started) throw Error('Сессия не открыта');
     let f = await db.findOne({type: 'record', id});
-    if (f !== null) throw {'message': 'Ученик уже записан', data: {student: st, record: f}};
-    let url = await dispatch('createImageUrl', {rd: st, imagedata: st.img});
-    let rd = await db.insert({type: 'record', id, img: url});
+    if (f !== null) throw {'message': 'Ученик уже записан', data: {student: st.st, record: f}};
+    // let url = await dispatch('createImageUrl', {rd: st, imagedata: st.img});
+    let rd = await db.insert({type: 'record', id});
     commit('pushRecord', rd);
     return rd;
   },

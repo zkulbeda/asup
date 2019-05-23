@@ -61,10 +61,10 @@ const actions = {
         if(st === null) return false;
         return st;
     },
-    async record({dispatch, commit},{id, img}){
+    async record({dispatch, commit},{id}){
         let st = await db.findOne({_id: id});
         if(st === null) throw {'message':'Ученик не найден'};
-        let rd = await dispatch('ThisDay/addStudent', {...st, img}, {root:true});
+        let rd = await dispatch('ThisDay/addStudent', {st,id}, {root:true});
         return {st, rd};
     },
     test({ }){
