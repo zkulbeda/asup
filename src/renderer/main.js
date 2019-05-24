@@ -33,6 +33,13 @@ Vue.filter('numWord',function(num,w1,w2,wMany){
   };
   return f(num,[w1,w2,wMany]);
 });
+import NProgress from 'nprogress';
+import {} from 'nprogress/nprogress.css';
+NProgress.configure({trickleSpeed: 100});
+Vue.prototype.$wait = (p)=>{
+  NProgress.start();
+  p.then(NProgress.done).catch(function(){console.error(arguments); NProgress.done();});
+};
 // Vue.prototype.$dbDay = config;
 let v = new Vue({
   components: { App },

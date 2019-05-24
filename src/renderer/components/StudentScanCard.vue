@@ -4,7 +4,9 @@
             <h2>{{data.st.name}}</h2>
             <div class="StudentInfoPrice">Питается <span :class="[data.st.pays?'nonfree':'free']">{{data.st.pays?'платно':'бесплатно'}}</span></div>
             <div class="StudentInfoClass">Учащийся {{data.st.group}} класса</div>
-            <div class="StudentInfoTime">Записан в {{data.rd.createdAt | formatTime}} ({{data.rd.createdAt | formatTimeFromNow}})</div>
+            <div class="StudentInfoTime">Записан в {{data.rd.createdAt | formatTime}}
+                <span class="StudentInfoTimeFromNow">{{data.rd.createdAt | formatTimeFromNow}}</span>
+            </div>
             <div v-if="error" class="StudentInfoError">{{error}}</div>
 <!--            <img class="StudentInfoCardImg" :src="student.img" :alt="student.name+' '+student.group">-->
         </template>
@@ -17,6 +19,7 @@
 
 <script>
     import {DateTime} from 'luxon'
+    import moment from 'moment'
     export default {
         props: {
             data: {
@@ -36,7 +39,7 @@
                 return DateTime.fromJSDate(time).toLocaleString(DateTime.TIME_24_WITH_SECONDS);
             },
             formatTimeFromNow(time){
-                return DateTime.fromJSDate(time).setLocale('ru').toRelative();
+                return moment(time).locale('ru').fromNow();
             }
         }
     }
@@ -56,6 +59,9 @@
     }
     .StudentInfoClass, .StudentInfoPrice, .StudentInfoTime{
         font-size: 18px;
+    }
+    .StudentInfoTimeFromNow{
+        color: rgba(0,0,0,0.5);
     }
     .StudentInfoCard .nonfree{
         color: #dc3545;

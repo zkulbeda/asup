@@ -67,7 +67,6 @@ const mutations = {
 
 const actions = {
   async init({dispatch, commit}) {
-    commit('init');
     commit('setLoadingState', true);
     let m = timeNow.month, d = timeNow.day;
     if(config.has('opened')){
@@ -89,6 +88,7 @@ const actions = {
     else commit('setStartState', [conf.started, conf.ended, m,d]);
     commit('setList', (await db.find({type: 'record'})).sort((a,b)=>b.createdAt-a.createdAt));
     commit('setLoadingState', false);
+    commit('init');
     return db;
   },
   async startSession({commit, state}) {

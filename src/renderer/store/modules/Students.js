@@ -11,7 +11,8 @@ console.log(db);
 
 const state = {
     students: null,
-    initialized: false
+    initialized: false,
+    loading: true
 }
 
 const mutations = {
@@ -26,6 +27,9 @@ const mutations = {
     addStudent(state, pl){
         state.students[pl._id] = pl;
     },
+    setLoadingState(state,st){
+        state.loading = st;
+    },
     test(){
 
     }
@@ -33,11 +37,13 @@ const mutations = {
 
 const actions = {
     async init({dispatch, commit}) {
-        commit('init');
+        commit('setLoadingState', true);
         console.log('init');
         await db.loadDatabase();
         await dispatch('refreshStudents');
         console.log('done');
+        commit('init');
+        commit('setLoadingState', true);
         return db;
     },
     async refreshStudents({commit}){

@@ -49,12 +49,12 @@
     },
     methods:{
       save(){
-        promiseIpc.send('generateExcel', {month: this.selected+1}).then(console.log).catch(console.error);
+        this.$wait(promiseIpc.send('generateExcel', {month: this.selected+1}).then(console.log).catch(console.error));
       }
     },
     mounted() {
       console.log(promiseIpc);
-      promiseIpc.send('getMonths').then((d)=>{
+      this.$wait(promiseIpc.send('getMonths').then((d)=>{
         console.log(d);
         this.loading = false;
         this.months = d;
@@ -64,7 +64,7 @@
           this.selected = now-1;
           console.log(now);
         }
-      })
+      }));
       //ipcRenderer.send('getMonths');
     }
   }

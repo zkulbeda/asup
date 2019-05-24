@@ -109,10 +109,10 @@
           return;
         }
         this.close();
-        this.$store.dispatch('ThisDay/closeSession', {
+        this.$wait(this.$store.dispatch('ThisDay/closeSession', {
           free: this.numFree,
           notFree: this.numNotFree
-        })
+        }));
       },
       close(){
         this.$modal.hide('closeDay');

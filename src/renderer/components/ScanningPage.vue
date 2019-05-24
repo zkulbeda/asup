@@ -207,7 +207,7 @@
     },
     filters:{
       formatTime(time) {
-        return DateTime.setLocale("ru").fromJSDate(time).toLocaleString(DateTime.TIME_24_WITH_SECONDS);
+        return moment(time).locale('ru').toLocaleString(DateTime.TIME_24_WITH_SECONDS);
       }
     },
     watch:{

@@ -12,7 +12,7 @@
         </div>
       </b-col>
       <b-col>
-         <router-view></router-view>
+         <router-view v-if="$store.state.Students.initialized && $store.state.ThisDay.initialized"></router-view>
       </b-col>
     </b-row>
   </b-container>
@@ -28,8 +28,7 @@
     },
     beforeCreate() {
         window.t = this;
-     this.$store.dispatch('Students/init');
-      this.$store.dispatch('ThisDay/init');
+      this.$wait(Promise.all([this.$store.dispatch('Students/init'),this.$store.dispatch('ThisDay/init')]));
     },
     filters:{
     }
@@ -37,6 +36,15 @@
 </script>
 
 <style>
+  /*#nprogress{*/
+  /*  pointer-events: unset;*/
+  /*  cursor: wait;*/
+  /*  position: absolute;*/
+  /*  left: 0;*/
+  /*  right:0;*/
+  /*  height: 100%;*/
+  /*  width: 100%;*/
+  /*}*/
   #appMenu{
     margin-top: 25px
   }

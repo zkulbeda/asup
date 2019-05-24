@@ -38,11 +38,11 @@
     <div class="d-flex  justify-content-between align-items-center">
       <div>
       <div v-if="selectMode" class="d-flex justify-content-start align-items-baseline">
-        <b-dropdown split @click="savePDF" size="sm" id="dropdown-1" class="mr-2 dropdown-with-icon">
+        <b-dropdown split @click="$wait(savePDF())" size="sm" id="dropdown-1" class="mr-2 dropdown-with-icon">
           <template slot="button-content">
             <FileDownloadIcon class="top-1px"></FileDownloadIcon>Печать в PDF
           </template>
-          <b-dropdown-item @click="print"><PrinterIcon></PrinterIcon>Распечатать</b-dropdown-item>
+          <b-dropdown-item @click="$wait(print())"><PrinterIcon></PrinterIcon>Распечатать</b-dropdown-item>
           <b-dropdown-item><DeleteIcon></DeleteIcon>Удалить</b-dropdown-item>
           <b-dropdown-item><ReAddIcon></ReAddIcon>Изменить идентификатор</b-dropdown-item>
           <b-dropdown-divider></b-dropdown-divider>
