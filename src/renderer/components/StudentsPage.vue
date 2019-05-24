@@ -54,7 +54,7 @@
           <b-dropdown-item v-if="!viewSelected" @click="addAll"><CheckAllIcon></CheckAllIcon>Выделить все{{query.length>0?' найденные':''}}</b-dropdown-item>
           <b-dropdown-item @click="clearSelected"><ClearCheckIcon></ClearCheckIcon>Убрать выделение</b-dropdown-item>
         </b-dropdown>
-        <div> {{selected.length}} элементов</div>
+        <div> {{selected.length}} {{selected.length | numWord('элемент','элемента','элементов')}}</div>
       </div>
       </div>
       <b-pagination v-show="size>perPage"

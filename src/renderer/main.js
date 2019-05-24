@@ -27,6 +27,12 @@ Vue.use(VueBar);
 // Vue.prototype.$students = db;
 console.log(getGlobal('config'));
 Vue.prototype.$config = getGlobal('config');
+Vue.filter('numWord',function(num,w1,w2,wMany){
+  let f = (n, titles) =>{
+    return titles[(n % 10 === 1 && n % 100 !== 11) ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2]
+  };
+  return f(num,[w1,w2,wMany]);
+});
 // Vue.prototype.$dbDay = config;
 let v = new Vue({
   components: { App },

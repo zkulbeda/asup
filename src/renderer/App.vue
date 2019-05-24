@@ -21,7 +21,7 @@
 
 <script>
   import "vue-material-design-icons/styles.css"
-  import {ipcRenderer} from 'electron'
+  import {ipcRenderer} from 'electron';
   export default {
     name: 'qr-lunch',
     methods:{
@@ -30,6 +30,8 @@
         window.t = this;
      this.$store.dispatch('Students/init');
       this.$store.dispatch('ThisDay/init');
+    },
+    filters:{
     }
   }
 </script>

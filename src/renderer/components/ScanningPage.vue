@@ -19,13 +19,13 @@
             <div class="ScanningPageCameraHelpBG" :class="{paused: paused}"></div>
           </div>
         </b-col>
-        <b-col v-bar class="vb" style="max-height: 300px">
+        <b-col v-bar class="vb" style="max-height: 300px; padding-right: 0px;">
           <div>
             <div>
           <b-list-group  class="ScanningPageList">
-            <b-list-group-item v-for="(qr,i) in scannedList" href="#" :active="i===selected" :key="i" @click="viewCard(i)">
+            <b-list-group-item v-for="(qr,i) in scannedList" href="#" v-scrollInto="i===selected" :active="i===selected" :key="i" @click="viewCard(i)">
               {{$store.state.Students.students[qr.id].name}}
-              <span>{{qr.createdAt | formatTime}}</span>
+<!--              <span>{{qr.createdAt | formatTime}}</span>-->
             </b-list-group-item>
           </b-list-group>
           </div>
@@ -114,6 +114,7 @@
       },
       toggle() {
         this.paused = !this.paused;
+        return false;
       },
       async onDetect(promise) {
         try {
@@ -175,11 +176,19 @@
         componentUpdated: function (el, {value}) {
           if(value == true) el.focus();
         }
+      },
+      scrollInto: {
+        inserted: function (el, {value}) {
+          if(value === true) el.scrollIntoView({behavior: 'smooth', inline: 'end'});
+        },
+        componentUpdated: function (el, {value}) {
+          if(value === true) el.scrollIntoView({behavior: 'smooth', inline: 'end'});
+        }
       }
     },
     filters:{
-      formatTime(time){
-        return DateTime.fromJSDate(time).toLocaleString(DateTime.TIME_24_WITH_SECONDS);
+      formatTime(time) {
+        return DateTime.setLocale("ru").fromJSDate(time).toLocaleString(DateTime.TIME_24_WITH_SECONDS);
       }
     },
     watch:{
