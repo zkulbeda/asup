@@ -15,14 +15,10 @@ function getCanvasBlob(canvas, ...p) {
     }, ...p)
   })
 }
-let {app} = require('electron').remote;
+let {app, getGlobal} = require('electron').remote;
 let db = null;
+let config = getGlobal('config');
 let timeNow = DateTime.local();
-db = nedb({
-  filename: path.join(app.getPath('userData'), 'data/' + timeNow.month + '/' + timeNow.day + '.json'),
-  timestampData: true
-});
-console.log(db);
 
 async function update(db, need, replaced) {
   let i = await db.findOne(need);
@@ -34,7 +30,11 @@ const state = {
   initialized: false,
   started: false,
   ended: false,
-  listOfRecords: []
+  listOfRecords: [],
+  day: null,
+  month: null,
+  hasNoClosedDay: false,
+  loading: false,
 }
 
 const mutations = {
@@ -46,38 +46,70 @@ const mutations = {
   setStartState(state, arr) {
     state.started = arr[0];
     state.ended = arr[1];
+    if(arr.length>2){
+      state.month = arr[2];
+      state.day = arr[3];
+    }
   },
   pushRecord(state, rd) {
     state.listOfRecords.unshift(rd);
   },
   setList(state, rds){
     state.listOfRecords = rds;
-  }
+  },
+  setLoadingState(state, st){
+    state.loading = st;
+  },
+  setClosedDayState(state, st){
+    state.hasNoClosedDay = st;
+  },
 }
 
 const actions = {
   async init({dispatch, commit}) {
     commit('init');
-    db.loadDatabase();
+    commit('setLoadingState', true);
+    let m = timeNow.month, d = timeNow.day;
+    if(config.has('opened')){
+      let mm = config.get('opened.month');
+      let dd = config.get('opened.day');
+      if(mm!==m || dd!==d){
+        m = mm;
+        d = dd;
+        commit('setClosedDayState', true);
+      }
+    }
+    db = nedb({
+      filename: path.join(app.getPath('userData'), 'data/' + m + '/' + d + '.json'),
+      timestampData: true,
+    });
+    await db.loadDatabase();
     let conf = await db.findOne({type: 'config'});
     if (conf === null) await db.insert({type: 'config', started: false, ended: false});
-    else commit('setStartState', [conf.started, conf.ended]);
+    else commit('setStartState', [conf.started, conf.ended, m,d]);
     commit('setList', (await db.find({type: 'record'})).sort((a,b)=>b.createdAt-a.createdAt));
+    commit('setLoadingState', false);
     return db;
   },
   async startSession({commit, state}) {
     if (state.started) throw Error('Сессия уже открыта');
-
     await update(db, {type: 'config'}, {started: true});
     commit('setStartState', [true, false]);
+    config.set('opened.month', state.month);
+    config.set('opened.day', state.day);
     return true;
   },
-  async closeSession({commit, state}, pl) {
+  async closeSession({commit, state, dispatch}, pl) {
     console.log(pl);
     if (!state.started) throw Error('Сессия еще не открыта');
     await update(db, {type: 'config'}, {started: true, ended: true});
     await db.insert({type: 'price', ...pl});
     commit('setStartState', [true, true]);
+    config.delete('opened');
+    if(state.hasNoClosedDay){
+      commit('setClosedDayState', false);
+      dispatch("init");
+    }
     return false;
   },
   async addStudent({commit, state, dispatch}, st) {

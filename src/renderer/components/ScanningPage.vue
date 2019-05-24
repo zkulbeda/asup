@@ -1,6 +1,16 @@
 <template>
   <b-card>
   <b-container style="position: relative;">
+    <b-row v-if="$store.state.ThisDay.hasNoClosedDay">
+      <b-col class="text-center ScanningPageDayStatus">
+        <h1>Предыдущий день не был закрыт</h1>
+        <p>Чтобы открыть текущий день, необходимо закрыть предыдущий.<br>День который нужно закрыть: <b>{{dayInWords}}</b> <br>Вы обязаны закрыть этот день.</p>
+        <div class="ScanningPageDayNotStarted_button">
+          <b-button variant="danger" @click="closeDay">Закрыть {{dayInWords}}</b-button>
+        </div>
+      </b-col>
+    </b-row>
+    <template v-else>
     <template v-if="$store.state.ThisDay.started && !$store.state.ThisDay.ended">
       <b-row>
         <b-col>
@@ -49,6 +59,7 @@
         <p>Следующий день можно будет открыть завтра.</p>
       </b-col>
     </b-row>
+    </template>
     <CloseDayModel  @opened="beforeOpenModal" @closed="afterCloseModal"></CloseDayModel>
   </b-container>
   </b-card>
@@ -63,6 +74,7 @@
   import {DateTime} from 'luxon'
   import CloseDayModel from "@/components/CloseDayModel";
   import Camera from './Camera';
+  import moment from 'moment'
   let {app, dialog} = require('electron').remote;
 
   export default {
@@ -82,6 +94,13 @@
       }
     },
     computed: {
+      dayInWords(){
+        let m = moment();
+        m.locale('ru');
+        m.date(this.$store.state.ThisDay.day);
+        m.month(this.$store.state.ThisDay.month-1);
+        return m.format('DD MMMM');
+      },
       cameraInit(){
         return {
           mandatory: {

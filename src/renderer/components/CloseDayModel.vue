@@ -4,7 +4,7 @@
       <CloseIcon class="CloseIcon" @click="close"></CloseIcon>
       <h3>Закрытие дня</h3>
       <p>
-        Необходимо ввести цену обеда.
+        Необходимa ценa обеда для {{count}} {{count|numWord('ученика','учеников','учеников')}}
       </p>
       <hr style="margin-left: -20px; margin-right: -20px;">
       <b-form @submit="end" @submit.stop.prevent>
@@ -73,6 +73,7 @@
         notfree: null,
       }
     },
+
     validators:{
       free(v){
         return Validator.value(v).required().float().greaterThanOrEqualTo(0).custom(()=>{
@@ -86,6 +87,9 @@
       }
     },
     computed:{
+      count(){
+        return this.$store.state.ThisDay.listOfRecords.length;
+      },
       numFree(){
         return Number(this.free);
       },
