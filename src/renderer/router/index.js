@@ -31,6 +31,11 @@ export default new Router({
       component: require('@/components/PrintCardView').default
     },
     {
+      path: '/settings',
+      name: 'settings',
+      component: require('@/components/SettingsView').default
+    },
+    {
       path: '*',
       redirect: '/ScanningPage'
     }
