@@ -51,6 +51,12 @@
   #app{
     padding-top: 50px;
   }
+  #app.waiting>*{
+    pointer-events: none;
+  }
+  #app.waiting{
+    cursor: wait;
+  }
   html, body, #app{
     height: 100%;
   }

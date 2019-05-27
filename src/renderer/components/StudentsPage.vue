@@ -43,8 +43,8 @@
             <FileDownloadIcon class="top-1px"></FileDownloadIcon>Печать в PDF
           </template>
           <b-dropdown-item @click="$wait(print())"><PrinterIcon></PrinterIcon>Распечатать</b-dropdown-item>
-          <b-dropdown-item><DeleteIcon></DeleteIcon>Удалить</b-dropdown-item>
-          <b-dropdown-item><ReAddIcon></ReAddIcon>Изменить идентификатор</b-dropdown-item>
+          <b-dropdown-item @click="remove"><DeleteIcon></DeleteIcon>Удалить</b-dropdown-item>
+          <b-dropdown-item @click="reident"><ReAddIcon></ReAddIcon>Изменить идентификатор</b-dropdown-item>
           <b-dropdown-divider></b-dropdown-divider>
           <b-dropdown-item @click="toggleViewMode">
             <toNormalModeIcon v-if="viewSelected"></toNormalModeIcon>
@@ -68,6 +68,7 @@
       ></b-pagination>
     </div>
     <ScanningStudentCardModel :detect="detect"></ScanningStudentCardModel>
+    <StudentDangerActionModel :selected="selected"></StudentDangerActionModel>
   </b-card>
 </template>
 
@@ -94,6 +95,7 @@
   import toOnlyCheckModeIcon from 'icons/CheckboxMultipleMarked';
   import CheckAllIcon from 'icons/CheckAll';
   import ClearCheckIcon from 'icons/LayersOff';//CheckboxMultipleBlankOutline
+  import StudentDangerActionModel from './StudentDangerActionModel';
   import ScanningStudentCardModel from './ScanningStudentCardModel';
   Vue.use(VueFuse);
   let addMontFont = (d,m,t)=>{
@@ -102,7 +104,7 @@
   }
   export default {
     name: "StudentsPage",
-    components:{FileDownloadIcon, QrIcon,ScanningStudentCardModel,AdAccIcon,PrinterIcon,DeleteIcon,ReAddIcon,
+    components:{FileDownloadIcon, QrIcon,ScanningStudentCardModel,StudentDangerActionModel,AdAccIcon,PrinterIcon,DeleteIcon,ReAddIcon,
       toNormalModeIcon,toOnlyCheckModeIcon,CheckAllIcon,ClearCheckIcon},
     data() {
       return {
@@ -158,6 +160,22 @@
       }
     },
     methods:{
+      remove(){
+        this.$modal.show('danger-students-action', {
+          type: 'remove',
+          callback(){
+            this.$wait(this.$store.dispatch('Students/remove', this.selected).then(()=>{this.$modal.hide('danger-students-action'); this.selected = [];}), true, 0);
+          }
+        });
+      },
+      reident(){
+        this.$modal.show('danger-students-action', {
+          type: 'reidentification',
+          callback: ()=>{
+            this.$wait(this.$store.dispatch('Students/reidentification', this.selected).then(()=>{this.$modal.hide('danger-students-action'); this.selected = [];}), true, 0);
+          }
+        });
+      },
       async detect(d){
         let r = this.$store.dispatch('Students/find', d);
         if(r===false) return false;

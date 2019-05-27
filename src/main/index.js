@@ -53,12 +53,28 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
-promiseIpc.on('getMonths', (e) => {
+promiseIpc.on('getMonths', async (e) => {
   let url = path.join(app.getPath('userData'), 'data/');
   let months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-  let res = months.map((e) => {
-    return fs.existsSync(path.join(url, e + '/'));
-  });
+  let res = await Promise.all(months.map(async (e) => {
+    if(fs.existsSync(path.join(url, e + '/'))) {
+      let count = 0;
+      for (let i = 1; i < 32; i++) {
+        let p = path.join(app.getPath('userData'), 'data/' + e + '/' + i + '.json');
+        if (!fs.existsSync(p)) continue;
+        let vdb = nedb({
+          filename: p,
+          timestampData: true,
+          autoload: true
+        });
+        let conf = await vdb.findOne({type: 'config'});
+        if (conf === null || conf.started == false || conf.ended == false) continue;
+        count++;
+      }
+      return count>0;
+    }
+    return false;
+  }));
   return res;
 });
 
@@ -142,7 +158,7 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
       }
     }
     ws.cell(last, 2 + data.length).formula('SUM(' + xl.getExcelCellRef(last, 2) + ":" + xl.getExcelCellRef(last, 1 + data.length) + ")").style(dem);
-    ws.cell(last, 2 + data.length + 1).formula('COUNT(' + xl.getExcelCellRef(last, 2) + ":" + xl.getExcelCellRef(last, 1 + data.length) + ")").style(dem);
+    ws.cell(last, 2 + data.length + 1).formula('COUNT(' + xl.getExcelCellRef(last, 2) + ":" + xl.getExcelCellRef(last, 1 + data.length) + ")");
     if(i%2===1) ws.cell(last, 1, last, 1+data.length+2).style({
       fill:{
         type: 'pattern',
@@ -157,12 +173,12 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
   for (let i = 0; i < data.length; i++) {
     ws.cell(last, 2 + i).formula('SUM(' + xl.getExcelCellRef(4, 2 + i) + ":" + xl.getExcelCellRef(last - 1, 2 + i) + ")").style(dem);
   }
-  ws.cell(last, 2 + data.length).formula('SUM(' + xl.getExcelCellRef(4, 2 + data.length) + ":" + xl.getExcelCellRef(last - 1, 2 + data.length) + ")").style(border).style(dem);
+  ws.cell(last, 2 + data.length).formula('SUM(' + xl.getExcelCellRef(4, 2 + data.length) + ":" + xl.getExcelCellRef(last - 1, 2 + data.length) + ")").style(border);
   last++;
 
-  ws.cell(last, 1).string("Количество").style(styleRight).style(stTableH).style(dem);
+  ws.cell(last, 1).string("Количество").style(styleRight).style(stTableH);
   for (let i = 0; i < data.length; i++) {
-    ws.cell(last, 2 + i).formula('COUNT(' + xl.getExcelCellRef(4, 2 + i) + ":" + xl.getExcelCellRef(last - 2, 2 + i) + ")").style(dem);
+    ws.cell(last, 2 + i).formula('COUNT(' + xl.getExcelCellRef(4, 2 + i) + ":" + xl.getExcelCellRef(last - 2, 2 + i) + ")");
   }
   ws.cell(2, 1, last, 3 + data.length).style(border);
   ws.cell(2, 1 + data.length + 1, last, 1 + data.length + 1).style(borderLeft);
@@ -195,13 +211,18 @@ promiseIpc.on('generateExcel', async (e) => {
       timestampData: true,
       autoload: true
     });
-    let students = await vdb.find({type: 'record'});
-    let price = await vdb.findOne({type: "price"});
-    data.push({
-      students,
-      price,
-      id: i
-    });
+    let conf = await vdb.findOne({type: 'config'});
+    console.log(conf);
+    if(conf === null || conf.started==false || conf.ended==false) continue;
+    else{
+      let students = await vdb.find({type: 'record'});
+      let price = await vdb.findOne({type: "price"});
+      data.push({
+        students,
+        price,
+        id: i
+      });
+    }
   }
   console.log(data);
   let db = nedb({
@@ -236,96 +257,31 @@ promiseIpc.on('generateExcel', async (e) => {
   console.log(stCell);
   let classes = uniqWith(await db.find({}), (a, b) => a.group == b.group).map((e) => e.group).sort();
   let st = await db.find({});
-  generateWS(wb, 'Общая', "Общий отчёт питания по всей школе за " + monthNames[mth], st, data, stCell);
+  let mntn = monthNames[mth-1];
+  generateWS(wb, 'Общая', "Общий отчёт питания по всей школе за " + mntn, st, data, stCell);
   st = await db.find({pays: true});
-  generateWS(wb, 'Общая П', "Общий отчёт платного питания по всей школе за " + monthNames[mth], st, data, stCell);
+  generateWS(wb, 'Общая П', "Общий отчёт платного питания по всей школе за " + mntn, st, data, stCell);
   st = await db.find({pays: false});
-  generateWS(wb, 'Общая Б', "Общий отчёт бесплатного питания по всей школе за " + monthNames[mth], st, data, stCell);
+  generateWS(wb, 'Общая Б', "Общий отчёт бесплатного питания по всей школе за " + mntn, st, data, stCell);
   for (let i = 0; i < classes.length; i++) {
     st = await db.find({pays: true, group: classes[i]});
     if (st.length > 0) {
-      generateWS(wb, classes[i] + ' П', "Отчёт платного питания " + classes[i] + " класса за " + monthNames[mth], st, data, stCell);
+      generateWS(wb, classes[i] + ' П', "Отчёт платного питания " + classes[i] + " класса за " + mntn, st, data, stCell);
     }
     st = await db.find({pays: false, group: classes[i]});
     if (st.length > 0) {
-      generateWS(wb, classes[i] + ' Б', "Отчёт бесплатного питания " + classes[i] + " класса за " + monthNames[mth], st, data, stCell);
+      generateWS(wb, classes[i] + ' Б', "Отчёт бесплатного питания " + classes[i] + " класса за " + mntn, st, data, stCell);
     }
   }
   ;
 
   dialog.showSaveDialog(mainWindow, {
     title: 'Сохранение таблицы',
-    filters: [{name: '123', extensions: ['xlsx', 'js']}]
+    defaultPath: 'Полный отчёт питания школы за '+mntn,
+    filters: [{name: 'Таблица Excel', extensions: ['xlsx']}]
   }, (file) => {
     wb.writeToBuffer().then((buf) => {
       fs.writeFileSync(file, buf);
     })
   });
 });
-
-ipcMain.on('generateExcell', function () {
-  let days = [{price: 4.75, purples: [1, 2, 3]}, {price: 4.75, purples: [1, 2, 3]}, {
-    price: 1.34,
-    purples: [1, 4, 5]
-  }, {price: 1.34, purples: [1, 4, 5]}];
-  let purples = {
-    1: "Кульбеда",
-    2: "Женя ывшакпмука",
-    3: "Наталья ываопмгврпм",
-    4: "Кузьмааа ваыпмог",
-    5: "Шелест Лист"
-  };
-  let wb = new xl.Workbook({});
-  let ws = wb.addWorksheet('1', {});
-  let styleCentered = {alignment: {horizontal: 'center', vertical: 'center'}};
-  let border = {
-    border: {
-      outline: true,
-      left: {
-        type: 'double', color: 'black'
-      },
-      right: {
-        type: 'double', color: 'black'
-      },
-      top: {
-        type: 'double', color: 'black'
-      },
-      bottom: {
-        type: 'double', color: 'black'
-      }
-    }
-  };
-  let stCell = merge({}, styleCentered, border);
-  console.log(stCell);
-  ws.cell(1, 1, 1, 1 + days.length + 1, true).string('NAME').style(styleCentered);
-  ws.cell(2, 1, 3, 1, true).string("ФИО").style(stCell);
-  ws.cell(2, 2, 2, 1 + days.length, true).string("День месяца").style(stCell);
-  ws.cell(2, 1 + days.length + 1, 3, 1 + days.length + 1, true).string("Сумма").style(stCell);
-  ws.row(1).setHeight(25);
-  ws.column(1).setWidth(30);
-  for (let i = 0; i < days.length; i++) {
-    ws.column(2 + i).setWidth(8);
-    ws.cell(3, 2 + i).number(i + 1).style(stCell);
-  }
-  ws.column(1 + days.length + 1).setWidth(10);
-  let last = 4;
-  for (let i in purples) {
-    ws.cell(last, 1).string(purples[i]).style(border);
-    for (let j = 0; j < days.length; j++) {
-      if (days[j].purples.indexOf(i - 0) !== -1) {
-        ws.cell(last, 2 + j).number(days[j].price).style(border);
-      }
-    }
-    ws.cell(last, 2 + days.length).formula('SUM(' + xl.getExcelCellRef(last, 1) + ":" + xl.getExcelCellRef(last, 1 + days.length) + ")").style(border);
-    last++;
-  }
-
-  dialog.showSaveDialog(mainWindow, {
-    title: 'Сохранение таблицы',
-    filters: [{name: '123', extensions: ['xlsx', 'js']}]
-  }, (file) => {
-    wb.writeToBuffer().then((buf) => {
-      fs.writeFileSync(file, buf);
-    })
-  })
-})

@@ -36,10 +36,32 @@ Vue.filter('numWord',function(num,w1,w2,wMany){
 import NProgress from 'nprogress';
 import {} from 'nprogress/nprogress.css';
 NProgress.configure({trickleSpeed: 100});
-Vue.prototype.$wait = (p)=>{
-  NProgress.start();
-  p.then(NProgress.done).catch(function(){console.error(arguments); NProgress.done();});
-};
+Vue.use({
+  install(Vue){
+    Vue.prototype.$wait = function(p, needWait = true, timeout=400){
+      NProgress.start();
+      let timer = null;
+      let root = null;
+      console.log(this);
+      if(this===undefined) needWait = false;
+      else root = this.$root.$el;
+
+      if(needWait){
+        timer = setTimeout(()=>{
+          root.classList.add('waiting');
+        },timeout);
+      }
+      let done = ()=>{
+        if(timer !== null){
+          clearTimeout(timer);
+          root.classList.remove('waiting');
+        }
+        NProgress.done();
+      };
+      p.then(done).catch(function(){console.error(arguments); done();});
+    };
+  }
+});
 // Vue.prototype.$dbDay = config;
 let v = new Vue({
   components: { App },
