@@ -20,7 +20,9 @@
             scanner = new qr.Scanner({
                 video: this.$el,
                 captureImage: true,
-                refractoryPeriod: 500
+                refractoryPeriod: 5000,
+                mirror: false,
+                scanPeriod: 1
             });
             if(!this.paused) {
                 this.start();

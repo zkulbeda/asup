@@ -131,6 +131,7 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
     },
     pageSetup: {
       fitToWidth: 1,
+      fitToHeight: 0,
       orientation: 'landscape'
     }
   });
@@ -142,9 +143,10 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
   ws.cell(2, 1 + data.length + 1, 3, 1 + data.length + 1, true).string("Сумма").style(stCell).style(stTableH);
   ws.cell(2, 1 + data.length + 2, 3, 1 + data.length + 2, true).string("Количество").style(stCell).style(stTableH);
   ws.row(1).setHeight(25);
-  ws.column(1).setWidth(30);
+  ws.row(3).freeze();
+  ws.column(1).setWidth(33);
   for (let i = 0; i < data.length; i++) {
-    ws.column(2 + i).setWidth(5);
+    ws.column(2 + i).setWidth(6);
     ws.cell(3, 2 + i).string(data[i].id + '').style(stCell);
   }
   ws.column(1 + data.length + 1).setWidth(10);
@@ -153,7 +155,9 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
   for (let i in st) {
     ws.cell(last, 1).string(st[i].name).style(border);
     for (let j = 0; j < data.length; j++) {
-      if (findIndex(data[j].students, (e) => e.id === st[i].id) !== -1) {
+      console.log(data[j].students,st[i]);
+      if (findIndex(data[j].students, (e) => e.id === st[i]._id) !== -1) {
+        console.log('ok');
         ws.cell(last, 2 + j).number(st[i].pays ? data[j].price.notFree : data[j].price.free).style(border).style(dem);
       }
     }

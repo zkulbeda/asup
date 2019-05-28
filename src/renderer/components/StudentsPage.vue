@@ -7,7 +7,7 @@
     </h4>
     <b-form-group>
       <b-input-group>
-        <b-form-input ref="input" v-model="query" placeholder="Поиск..."></b-form-input>
+        <b-form-input ref="input" @input="startTyping" :value="query" placeholder="Поиск..."></b-form-input>
         <b-input-group-append>
           <b-button variant="outline-secondary" class="btn-with-only-icon StudentPageScanIcon" @click="openScanModal"><QrIcon decorative></QrIcon></b-button>
         </b-input-group-append>
@@ -34,6 +34,10 @@
       <template slot="checkbox" slot-scope="data" class="table-checkbox">
         <b-form-checkbox v-model="selected" :value="data.item._id" :key="data.item._id"></b-form-checkbox>
       </template>
+      <div slot="table-busy" class="text-center text-primary my-2 d-flex justify-content-center align-items-center">
+        <b-spinner small  class="align-middle mr-2"></b-spinner>
+        <strong>Ожидание...</strong>
+      </div>
     </b-table>
     <div class="d-flex  justify-content-between align-items-center">
       <div>
@@ -97,6 +101,7 @@
   import ClearCheckIcon from 'icons/LayersOff';//CheckboxMultipleBlankOutline
   import StudentDangerActionModel from './StudentDangerActionModel';
   import ScanningStudentCardModel from './ScanningStudentCardModel';
+  import debounce from 'lodash/debounce';
   Vue.use(VueFuse);
   let addMontFont = (d,m,t)=>{
     d.addFileToVFS('mont'+t+'.ttf',m.split(',')[1]);
@@ -134,6 +139,7 @@
           // }
         },
         query: '',
+        lazyQuery: '',
         viewSelected: false,
         isBusy: false
       }
@@ -150,6 +156,19 @@
       },
       selectMode(){
         return this.selected.length>0;
+      }
+    },
+    created(){
+      this.inputQuery = debounce((e)=>{
+        this.query = e;this.isBusy = false;
+        //console.log(e);
+        this.$nextTick(()=>{
+          this.$refs.table.refresh();
+        });
+      },300);
+      this.startTyping = (e)=>{
+        this.isBusy = true;
+          this.inputQuery(e);
       }
     },
     mounted(){
@@ -261,11 +280,16 @@
         })
       },
       async founded(){
+        console.log(this.query);
         if(this.query!==''){
           this.sortBy = '';
           if(this.query.match(/^(1[0-1]|[5-9])([А-я])?$/)){
             let s = this.query.toUpperCase();
-            return this.it.filter((e)=>e.group.includes(s));
+            let r = this.it.filter((e)=>e.group.includes(s));
+            this.currentPage = 1;
+            this.isBusy = false;
+            this.size = r.length;
+            return r;
           }
           let i = await this.$search(this.query,this.it,{
             keys: ['name','group'],
@@ -278,12 +302,14 @@
           });
           this.size = i.length;
           this.currentPage = 1;
+          this.isBusy = false;
           return i;
         }else {
           this.sortBy = 'name';
           this.sortDesc = false;
           this.size = this.it.length;
           this.currentPage = 1;
+          this.isBusy = false;
           return this.it;
         }
       }
