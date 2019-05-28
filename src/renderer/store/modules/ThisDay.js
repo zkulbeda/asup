@@ -70,8 +70,8 @@ const actions = {
     commit('setLoadingState', true);
     let m = timeNow.month, d = timeNow.day;
     if(config.has('opened')){
-      let mm = config.get('opened.month');
-      let dd = config.get('opened.day');
+      let mm = config.get('opened.month') || m;
+      let dd = config.get('opened.day') || d;
       if(mm!==m || dd!==d){
         m = mm;
         d = dd;
@@ -102,9 +102,14 @@ const actions = {
   async closeSession({commit, state, dispatch}, pl) {
     console.log(pl);
     if (!state.started) throw Error('Сессия еще не открыта');
-    await update(db, {type: 'config'}, {started: true, ended: true});
-    await db.insert({type: 'price', ...pl});
-    commit('setStartState', [true, true]);
+    if(state.listOfRecords.length>0) {
+      await update(db, {type: 'config'}, {started: true, ended: true});
+      await db.insert({type: 'price', ...pl});
+      commit('setStartState', [true, true]);
+    }else{
+      await update(db, {type: 'config'}, {started: false, ended: false});
+      commit('setStartState', [false, false]);
+    }
     config.delete('opened');
     if(state.hasNoClosedDay){
       commit('setClosedDayState', false);

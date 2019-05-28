@@ -25,7 +25,10 @@
               <b-button class="btn-primary">Повторить поиск</b-button>
             </div>
             <Camera @detect="onDetect" @init="onInit" v-model="paused"></Camera>
-            <div class="ScanningPageCameraHelp" :class="{paused: paused}">Нажмите пробел, <br v-if="paused"/>чтобы {{paused?'возобновить':'остановить'}} сканирование</div>
+            <div class="ScanningPageCameraHelpWrapper d-flex" :class="[paused?'align-items-center':'align-items-end']">
+              <div class="ScanningPageCameraHelp" :class="{paused: paused}">Нажмите пробел,
+                <br v-if="paused"/>чтобы {{paused?'возобновить':'остановить'}} сканирование</div>
+            </div>
             <div class="ScanningPageCameraHelpBG" :class="{paused: paused}"></div>
           </div>
         </b-col>
@@ -137,7 +140,8 @@
       },
       async onDetect(promise) {
         try {
-          const all = await promise;
+          const all = promise;
+          console.log(all)
           //let img = imagedata_to_image(all.imageData);
           // let img = await this.$store.dispatch('ThisDay/createImageUrl', {rd:{id: all.content, }, imagedata: all.imageData})
           let {st, rd} = await this.$store.dispatch("Students/record", {id: all.content, img: all.imageData});
@@ -238,7 +242,9 @@
     text-align: center;
     padding-top: 70px;
   }
-
+  .videoView{
+    margin-bottom: -6px;
+  }
   .ScanningPageDayStatus {
     padding: 70px 0px;
   }
@@ -246,9 +252,14 @@
   .ScanningPageDayNotStarted_button {
     padding-top: 20px;
   }
-
-  .ScanningPageCameraHelp {
+  .ScanningPageCameraHelpWrapper{
     position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+  }
+  .ScanningPageCameraHelp {
     display: block;
     bottom: 0;
     left: 0;
@@ -270,15 +281,13 @@
     height: 35px;
   }
   .ScanningPageCameraWrapper{
-    min-height: 250px;
+    /*height: 250px;*/
   }
   .ScanningPageCameraWrapper:hover .ScanningPageCameraHelp, .ScanningPageCameraWrapper:hover .ScanningPageCameraHelpBG{
     visibility: hidden;
   }
   .ScanningPageCameraHelp.paused{
     font-size: 22px;
-    height: 62%;
-
   }
   .ScanningPageCameraHelpBG.paused{
     background: rgba(52, 58, 64, 0.82);

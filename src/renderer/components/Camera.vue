@@ -1,31 +1,34 @@
 <template>
   <div>
-    <QrcodeStream v-if="cameraFound" :camera="camera" @detect="onDetect" @init="onInit" :paused="paused && cameraFound"></QrcodeStream>
+    <CameraViewOld @init="init" :camera="camera" @detect="onDetect" :paused="paused && cameraFound"></CameraViewOld>
   </div>
 </template>
 
 <script>
-  let {app, dialog} = require('electron').remote;
+  let {app, dialog, shell} = require('electron').remote;
   import QrcodeStream from './VueScan/components/QrcodeStream';
+  import CameraViewOld from './CameraViewOld';
+  import cameraDialog from './selectCamera';
+
   export default {
-    components:{QrcodeStream},
+    components: {QrcodeStream, CameraViewOld},
     model: {
       prop: 'paused',
       event: 'changeState'
     },
     name: "Camera",
-    props:{
+    props: {
       paused: Boolean
     },
-    data(){
+    data() {
       let id = this.$config.get('deviceID');
       return {
         deviceID: id,
         cameraFound: true,
       }
     },
-    computed:{
-      cameraInit(){
+    computed: {
+      cameraInit() {
         return {
           mandatory: {
             sourceId: this.deviceID//'4e8822da8628ebb83f14681db3d674c3495216b9f50ef64054f73c0b9301855f', //'0070d35198c8d70b1bdabb12f7953c7fbc117bfc096424c20dac86476ed75bdb',
@@ -33,35 +36,33 @@
         };
       },
       camera() {
-        return this.cameraFound ? this.cameraInit : false;
+        return this.cameraInit;
       },
     },
-    methods:{
-      selectCamera(){
-        navigator.mediaDevices.enumerateDevices()
-          .then((devices)=>{
-            console.log(devices);
-            let d = devices.filter((e)=>e.kind ==='videoinput');
-            dialog.showMessageBox({
-              type: "question",
-              title:"Подключено несколько камер",
-              detail: "Выберите камеру:",
-              buttons: d.map((d)=>d.label),
-              cancelId: -1,
-            }, (res)=>{
-              if(res==-1) {
-                this.$emit('changeState',true);
-                return 0;
-              }
-              this.$config.set('deviceID',d[res].deviceId);
-              this.deviceID = d[res].deviceId;
-              this.cameraFound = true;
-              this.$emit('changeState',false);
-            });
-          });
+    methods: {
+      async selectCamera() {
+        try {
+          let id = await cameraDialog();
+          this.$config.set('deviceID', id);
+          this.deviceID = id;
+          this.cameraFound = true;
+          this.$emit('changeState', false);
+        } catch (e) {
+          this.$emit('changeState', true);
+        }
       },
-      onDetect(promise) {
-        this.$emit('detect', promise);
+      onDetect(data) {
+        shell.beep();
+        this.$emit('detect', data);
+      },
+      init(state) {
+        if (state) {
+          this.cameraFound = true;
+        } else {
+          this.$emit('changeState', true);
+          this.cameraFound = false;
+          this.selectCamera();
+        }
       },
       async onInit(promise) {
         try {
@@ -91,9 +92,9 @@
         }
       },
     },
-    watch:{
-      paused(n){
-        if(n===false && this.cameraFound===false){
+    watch: {
+      paused(n) {
+        if (n === false && this.cameraFound === false) {
           this.$emit('changeState', true);
           this.selectCamera();
         }

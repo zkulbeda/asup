@@ -1,6 +1,8 @@
 import nedb from "nedb-promise";
 import path from "path";
 import keyBy from 'lodash/keyBy'
+import faker from 'faker';
+faker.locale = 'ru';
 
 let {app} = require('electron').remote;
 let db = null;
@@ -52,6 +54,16 @@ const actions = {
     commit('setStudents', res);
     return res;
   },
+  async generateFakeStudents({dispatch}, c){
+    for(let i = 0; i<c; i++){
+      await dispatch('insertStudent', {
+        name: faker.name.findName()+' '+faker.name.lastName(),
+        group: faker.random.number({min:5, max:11})+(faker.random.boolean()?'Б':'A'),
+        pays: faker.random.boolean()
+      });
+    }
+    await dispatch('refreshStudents');
+  },
   async insertStudent({commit}, pl) {
     let newStudent = await db.insert({name: pl.name, group: pl.group, pays: Boolean(pl.pays)});
     commit('addStudent', newStudent);
@@ -70,7 +82,7 @@ const actions = {
   },
   async record({dispatch, commit}, {id}) {
     let st = await db.findOne({_id: id});
-    if (st === null) throw {'message': 'Ученик не найден'};
+    if (st === null) throw {'message': 'Ученик не найден', id};
     let rd = await dispatch('ThisDay/addStudent', {st, id}, {root: true});
     return {st, rd};
   },

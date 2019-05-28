@@ -5,52 +5,66 @@
 <script>
     import qr from 'instascan';
     const { dialog } = require('electron').remote;
+    import findIndex from 'lodash/findIndex';
 
     let scanner = null;
     let last = null;
 
     export default {
         name: "CameraView",
-        mounted() {
-            console.log(this.$db);
-            let t = this;
+        props:{
+            camera: true,
+            paused: true
+        },
+        async mounted() {
             scanner = new qr.Scanner({
-                video: t.$el,
+                video: this.$el,
                 captureImage: true,
                 refractoryPeriod: 500
             });
-            qr.Camera.getCameras().then(function (cameras) {
-                if (cameras.length > 0) {
-                    scanner.start(cameras[1]);
-                    return ;
-                    if(cameras.length >1)
-                        dialog.showMessageBox({
-                            type: "question",
-                            title:"Подключено несколько камер",
-                            detail: "Выберите камеру:",
-                            buttons: cameras.map((d)=>d.name),
-                            cancelId: -1,
-                        }, (res)=>{
-                            if(res==-1) return;
-                            console.log(res)
-                            scanner.start(cameras[res]);
-                        });
-                    else scanner.start(cameras[0]);
-                } else {
-                    console.error('No cameras found.');
+            if(!this.paused) {
+                this.start();
+            }
+            scanner.on('scan',(data, imageData)=>{
+                if(data!==last){
+                    last = data;
+                    this.$emit('detect', {content: data, imageData});
                 }
-            }).catch(function (e) {
-                this.$emit('error',e);
-            });
-            scanner.on('scan',(data, image)=>{
-                // if(data!==last){
-                //     last = data;
-                    this.$emit('decode', data, image);
-                // }
             })
+        },
+        methods:{
+            async getCamera(c){
+                let cameras = await qr.Camera.getCameras();
+                let i = findIndex(cameras, (e)=>e.id===c.mandatory.sourceId);
+                if(i==-1){
+                    return null;
+                }
+                return cameras[i];
+            },
+            async start(c){
+                c = c||this.camera;
+                let cam = await this.getCamera(c);
+                console.log(cam, !!cam);
+                if(cam)
+                    scanner.start(cam);
+                this.$emit('init', !!cam);
+            }
+        },
+        watch:{
+            async paused(e){
+                if(!e)
+                    this.start();
+                else scanner.stop();
+            },
+            async camera(c){
+                scanner.stop();
+                if(!this.paused)
+                    this.start(c);
+            }
         },
         beforeDestroy(){
             scanner.stop();
+            scanner = null;
         },
         computed: {}
     }
