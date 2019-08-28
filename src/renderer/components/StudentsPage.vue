@@ -32,7 +32,7 @@
         <p class="text-center">Ученики не найдены. Проверьте ваш запрос.</p>
       </template>
       <template slot="checkbox" slot-scope="data" class="table-checkbox">
-        <b-form-checkbox v-model="selected" :value="data.item._id" :key="data.item._id"></b-form-checkbox>
+        <b-form-checkbox v-model="selected" :value="data.item.id" :key="data.item.id"></b-form-checkbox>
       </template>
       <div slot="table-busy" class="text-center text-primary my-2 d-flex justify-content-center align-items-center">
         <b-spinner small  class="align-middle mr-2"></b-spinner>
@@ -149,7 +149,7 @@
         let res = values(this.$store.state.Students.students);
         if(this.viewSelected){
           if(this.selected.length<1) this.viewSelected=false;
-          else res = res.filter((e)=>this.selected.indexOf(e._id)!==-1);
+          else res = res.filter((e)=>this.selected.indexOf(e.id)!==-1);
           console.log(this.viewSelected);
         }
         return res;
@@ -234,7 +234,7 @@
         let i = 0, j = 0;
         for(let st in this.selected){
           let stInfo = this.$store.state.Students.students[this.selected[st]];
-          await insertCard(doc,5+j*50,5+i*95, stInfo.name,stInfo._id, stInfo.pays);
+          await insertCard(doc,5+j*50,5+i*95, stInfo.name,stInfo.id, stInfo.pays);
           j++;
           if(j>3){
             j = 0;
@@ -259,9 +259,9 @@
         shell.openExternal('file://'+path.join(app.getPath('temp'),'./print.pdf'));
       },
       rowClick(d){
-        let i = this.selected.indexOf(d._id);
+        let i = this.selected.indexOf(d.id);
         if(i==-1){
-          this.selected.push(d._id);
+          this.selected.push(d.id);
         }
         else{
           this.selected.splice(i, 1);
@@ -274,8 +274,8 @@
       async addAll(){
         let l = await this.founded();
         l.forEach((e)=>{
-          if(this.selected.indexOf(e._id)===-1){
-            this.selected.push(e._id);
+          if(this.selected.indexOf(e.id)===-1){
+            this.selected.push(e.id);
           }
         })
       },

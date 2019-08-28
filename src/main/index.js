@@ -156,7 +156,7 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
     ws.cell(last, 1).string(st[i].name).style(border);
     for (let j = 0; j < data.length; j++) {
       console.log(data[j].students,st[i]);
-      if (findIndex(data[j].students, (e) => e.id === st[i]._id) !== -1) {
+      if (findIndex(data[j].students, (e) => e.id === st[i].id) !== -1) {
         console.log('ok');
         ws.cell(last, 2 + j).number(st[i].pays ? data[j].price.notFree : data[j].price.free).style(border).style(dem);
       }

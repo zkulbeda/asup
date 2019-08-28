@@ -150,7 +150,7 @@
           // ...
         } catch (error) {
           if (error.message === "Ученик уже записан") {
-            let f = this.scannedList.findIndex((e)=>error.data.record._id===e._id);
+            let f = this.scannedList.findIndex((e)=>error.data.record._id===e.id);
             this.selected = f!==-1?f:null;
             this.error = error.message;
           }

@@ -126,7 +126,8 @@
           group: this.group,
           pays: this.paysVal
         });
-        this.added.push(st._id);
+        console.log(st);
+        this.added.push(st.id);
         if (this.addMore) {
           this.name = null;
           this.paysVal = false;
