@@ -21,16 +21,24 @@ let mainWindow
 const winURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080`
   : `file://${__dirname}/index.html`
+global.kiosk_mode = true;
 
 function createWindow() {
   /**
    * Initial window options
    */
-  mainWindow = new BrowserWindow({
-    height: 563,
-    useContentSize: true,
-    width: 1000
-  })
+  let mainWindow = null;
+  if(global.kiosk_mode){
+    mainWindow = new BrowserWindow({
+      kiosk: true
+    })
+  }else{
+    mainWindow = new BrowserWindow({
+      height: 563,
+      useContentSize: true,
+      width: 1000
+    })
+  }
 
   mainWindow.loadURL(winURL)
   mainWindow.webContents.openDevTools();

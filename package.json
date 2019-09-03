@@ -75,6 +75,7 @@
     "faker": "^4.1.0",
     "instascan": "^1.0.0",
     "intl": "^1.2.5",
+    "intl-relativeformat": "^6.4.3",
     "jquery": "^3.4.1",
     "jspdf": "^1.5.3",
     "jsqr": "^1.2.0",
@@ -103,7 +104,8 @@
     "vuex": "^3.0.1",
     "vuex-electron": "^1.0.0",
     "webrtc-adapter": "^7.2.3",
-    "worker-loader": "^2.0.0"
+    "worker-loader": "^2.0.0",
+    "yargs": "^14.0.0"
   },
   "devDependencies": {
     "ajv": "^6.5.0",

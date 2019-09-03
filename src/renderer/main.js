@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import axios from 'axios'
 import App from './App'
+import KioskApp from './KioskApp'
 import router from './router'
 import store from './store'
 import nedb from 'nedb-promise';
@@ -33,6 +34,23 @@ Vue.filter('numWord',function(num,w1,w2,wMany){
   };
   return f(num,[w1,w2,wMany]);
 });
+Vue.directive('focus', {
+    // определение директивы
+    inserted: function (el, {value}) {
+      if(value == true) el.focus();
+    },
+    componentUpdated: function (el, {value}) {
+      if(value == true) el.focus();
+    }
+  });
+Vue.directive('scrollInto',{
+  inserted: function (el, {value}) {
+    if(value === true) el.scrollIntoView({behavior: 'smooth', inline: 'end'});
+  },
+  componentUpdated: function (el, {value}) {
+    if(value === true) el.scrollIntoView({behavior: 'smooth', inline: 'end'});
+  }
+});
 import NProgress from 'nprogress';
 import {} from 'nprogress/nprogress.css';
 NProgress.configure({trickleSpeed: 100});
@@ -51,20 +69,20 @@ Vue.use({
           root.classList.add('waiting');
         },timeout);
       }
-      let done = ()=>{
+      let done = (e)=>{
         if(timer !== null){
           clearTimeout(timer);
           root.classList.remove('waiting');
         }
-        NProgress.done();
+        NProgress.done(e);
       };
-      p.then(done).catch(function(){console.error(arguments); done();});
+      return p.then(done,function(e){console.error(arguments); done(e);});
     };
   }
 });
 // Vue.prototype.$dbDay = config;
 let v = new Vue({
-  components: { App },
+  components: { App: getGlobal('kiosk_mode')?KioskApp:App },
   router,
   store,
   template: '<App/>'
