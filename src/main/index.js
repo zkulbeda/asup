@@ -41,7 +41,7 @@ function createWindow() {
   }
 
   mainWindow.loadURL(winURL)
-  //mainWindow.webContents.openDevTools();
+  /*if (argv.dev)*/ mainWindow.webContents.openDevTools();
   global.mainWindow = mainWindow;
 
   mainWindow.on('closed', () => {
