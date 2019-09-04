@@ -16,12 +16,12 @@ import findIndex from 'lodash/findIndex'
 if (process.env.NODE_ENV !== 'development') {
   global.__static = require('path').join(__dirname, '/static').replace(/\\/g, '\\\\')
 }
-
+const argv = require('yargs').argv
 let mainWindow
 const winURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080`
   : `file://${__dirname}/index.html`
-global.kiosk_mode = true;
+global.kiosk_mode = argv.kiosk;
 
 function createWindow() {
   /**
@@ -41,7 +41,7 @@ function createWindow() {
   }
 
   mainWindow.loadURL(winURL)
-  mainWindow.webContents.openDevTools();
+  //mainWindow.webContents.openDevTools();
   global.mainWindow = mainWindow;
 
   mainWindow.on('closed', () => {
@@ -61,6 +61,11 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+promiseIpc.on('changeKioskMode', async (state)=>{
+  global.kiosk_mode = Boolean(state);
+  global.mainWindow.webContents.reload();
+  global.mainWindow.setKiosk(global.kiosk_mode);
+});
 promiseIpc.on('getMonths', async (e) => {
   let url = path.join(app.getPath('userData'), 'data/');
   let months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];

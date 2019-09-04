@@ -9,7 +9,12 @@
   import QrcodeStream from './VueScan/components/QrcodeStream';
   import CameraViewOld from './CameraViewOld';
   import cameraDialog from './selectCamera';
+  import Pizzicato from 'pizzicato';
 
+  let soundSuccess = new Pizzicato.Sound({
+    source: 'file',
+    options: { path: require('@/assets/beep.wav'), attack: 0 }
+  });
   export default {
     components: {QrcodeStream, CameraViewOld},
     model: {
@@ -52,7 +57,7 @@
         }
       },
       onDetect(data) {
-        shell.beep();
+        soundSuccess.play();
         this.$emit('detect', data);
       },
       init(state) {

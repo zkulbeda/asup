@@ -74,7 +74,7 @@ const actions = {
     return id;
   },
   async insertStudent({commit,dispatch}, pl) {
-    let id = await dispatch('generateID');
+    let id = pl.id?pl.id:await dispatch('generateID');
     let newStudent = await db.insert({id,name: pl.name, group: pl.group, pays: Boolean(pl.pays)});
     commit('addStudent', newStudent);
     return newStudent;

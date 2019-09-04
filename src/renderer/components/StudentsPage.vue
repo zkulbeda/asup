@@ -34,6 +34,9 @@
       <template slot="checkbox" slot-scope="data" class="table-checkbox">
         <b-form-checkbox v-model="selected" :value="data.item.id" :key="data.item.id"></b-form-checkbox>
       </template>
+      <template slot="pays" slot-scope="data" class="table-checkbox">
+        <b-badge :variant="data.item.pays?'danger':'success'">{{data.item.pays?'платно':'беспл.'}}</b-badge>
+      </template>
       <div slot="table-busy" class="text-center text-primary my-2 d-flex justify-content-center align-items-center">
         <b-spinner small  class="align-middle mr-2"></b-spinner>
         <strong>Ожидание...</strong>
@@ -133,6 +136,11 @@
             label: 'Класс',
             sortable: true,
             class: 'table-student-group'
+          },
+          pays: {
+            label: 'Статус',
+            sortable: true,
+            class: 'table-student-status'
           },
           // pays:{
           //   label: 'платник'
@@ -388,6 +396,9 @@
   }
   .table-student-group{
     width: 120px;
+  }
+  .table-student-status{
+    width: 30px;
   }
   .table-select-mode .table-checkbox{
     opacity: 1;

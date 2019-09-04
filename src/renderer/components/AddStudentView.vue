@@ -52,7 +52,7 @@
             <b-form-radio-group
                 id="pays"
                 class="pt-2"
-                :options="[{text:'бесплатник', value: false},{text: 'платник', value: true}]"
+                :options="[{text: 'платник', value: true},{text:'бесплатник', value: false}]"
                 v-model="paysVal"
                 required
             ></b-form-radio-group>
@@ -90,7 +90,7 @@
       return {
         name: null,
         group: null,
-        paysVal: false,
+        paysVal: true,
         addMore: false,
         added: []
       }
@@ -130,7 +130,7 @@
         this.added.push(st.id);
         if (this.addMore) {
           this.name = null;
-          this.paysVal = false;
+          this.paysVal = true;
           this.validation.reset();
           let temp = this.group;
           this.group = ''; this.$nextTick(()=>{this.group = temp;});
