@@ -1,10 +1,16 @@
 <template>
-  <modal name="closeDay" :width="400" height="auto" :adaptive="true" @opened="$emit('opened')"
+  <modal :name="modelName"
+         :width="400"
+         height="auto"
+         :adaptive="true"
+         @before-open="inits"
+         @opened="$emit('opened')"
          @before-close="$emit('closed')">
     <div class="CloseDayModal">
       <CloseIcon class="CloseIcon" @click="close"></CloseIcon>
-      <h3>Закрытие дня</h3>
+      <h3>{{edit?'Редактирование дня':'Закрытие дня'}}</h3>
       <template v-if="!isEmpty">
+        <div>Дата: {{dayInWord}}</div>
         <p>Необходимa ценa обеда для {{count}} {{count|numWord('ученика','учеников','учеников')}}</p>
         <hr style="margin-left: -20px; margin-right: -20px;">
         <b-form @submit="end" @submit.stop.prevent>
@@ -31,7 +37,6 @@
               id="input-group-2"
               label="Цена для бесплатников:"
               label-for="input-2"
-              description="Повторно сегодня день уже нельзя будет открыть."
           >
             <b-form-input
                 id="number"
@@ -46,8 +51,9 @@
               {{validation.firstError('free')}}
             </b-form-invalid-feedback>
           </b-form-group>
-          <div style="display: flex; justify-content: flex-end;">
-            <b-button @click="check" type="submit" variant="danger">Закрыть день</b-button>
+          <div style="display: flex; justify-content: space-between;">
+            <b-button @click="deleteDay" tag="a" variant="link">Удалить день</b-button>
+            <b-button @click="check" type="submit" :variant="edit?'success':'danger'">{{edit?'Редактировать':'Закрыть'}} день</b-button>
           </div>
         </b-form>
       </template>
@@ -65,6 +71,7 @@
   import Vue from 'vue';
   import SimpleVueValidation from 'simple-vue-validator';
   import CloseIcon from 'icons/close';
+  import {DateTime} from 'luxon'
 
   Vue.use(SimpleVueValidation);
   import msgs from './validation.js';
@@ -73,13 +80,16 @@
   const Validator = SimpleVueValidation.Validator;
   export default {
     components: {
-      CloseIcon
+      CloseIcon,
     },
-    name: "CloseDayModel",
+    name: "CloseDayReportModel",
     data() {
       return {
         free: null,
         notfree: null,
+        dayToEdit: null,
+        edit: false,
+        modelName: 'closeDayReport'
       }
     },
 
@@ -96,8 +106,9 @@
       }
     },
     computed: {
-      count() {
-        return this.$store.state.ThisDay.listOfRecords.length;
+      dayInWord(){
+        if(!this.dayToEdit) return '- -';
+        return this.dayToEdit.setLocale("ru").toLocaleString("dd LLLL");
       },
       numFree() {
         return Number(this.free);
@@ -106,7 +117,7 @@
         return Number(this.notfree);
       },
       isEmpty(){
-        return this.$store.state.ThisDay.listOfRecords.length<=0;
+        return this.count<=0;
       }
     },
     methods: {
@@ -127,16 +138,34 @@
             return;
           }
         }
-        this.close();
-        this.$wait(this.$store.dispatch('ThisDay/closeSession', {
+        this.$wait(this.callback({
           free: this.numFree,
-          notFree: this.numNotFree
-        }).then(()=>{this.clearState();}));
+          notFree: this.numNotFree,
+          dayToEdit: this.dayToEdit
+        }).then(()=>{this.clearState();this.close();}));
 
       },
+      async deleteDay(){
+        this.$wait(this.callbackDelete({
+          dayToEdit: this.dayToEdit
+        }).then(()=>{this.clearState();this.close();}));
+      },
       close() {
-        this.$modal.hide('closeDay');
-      }
+        this.$modal.hide(this.modelName);
+      },
+      inits(e){
+        console.log(e);
+        this.dayToEdit=e.params.dayToEdit;
+        this.edit=e.params.edit||false;
+        if(this.edit){
+          this.free=e.params.price.free||0;
+          console.log(e.params.price);
+          this.notfree=e.params.price.notFree||0;
+        }else{this.clearState()}
+        this.count=e.params.count||0;
+        this.callback=e.params.callback||(()=>Promise.reject());
+        this.callbackDelete=e.params.callbackDelete||(()=>Promise.reject());
+      },
     }
   }
 </script>

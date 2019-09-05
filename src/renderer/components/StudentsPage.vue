@@ -138,7 +138,7 @@
             class: 'table-student-group'
           },
           pays: {
-            label: 'Статус',
+            label: 'Пит.',
             sortable: true,
             class: 'table-student-status'
           },

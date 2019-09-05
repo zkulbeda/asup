@@ -1,5 +1,11 @@
 <template>
-  <modal name="danger-students-action" @before-open="inits" :pivotY="0.4" :clickToClose="false" :scrollable="true" :width="500" height="auto"
+  <modal name="danger-students-action"
+         @before-open="inits"
+         :pivotY="0.4"
+         :clickToClose="false"
+         :scrollable="true"
+         :width="500"
+         height="auto"
          :adaptive="true">
     <div style="padding: 20px;">
 

@@ -81,7 +81,7 @@ promiseIpc.on('getMonths', async (e) => {
           autoload: true
         });
         let conf = await vdb.findOne({type: 'config'});
-        if (conf === null || conf.started == false || conf.ended == false) continue;
+        if (conf === null || conf.started == false) continue;
         count++;
       }
       return count>0;
@@ -89,6 +89,42 @@ promiseIpc.on('getMonths', async (e) => {
     return false;
   }));
   return res;
+});
+
+promiseIpc.on('getMonthData', async({month})=>{
+  let data = {};
+  for (let i = 1; i < 32; i++) {
+    let p = path.join(app.getPath('userData'), 'data/' + month + '/' + i + '.json');
+    if (!fs.existsSync(p)) continue;
+    let vdb = nedb({
+      filename: p,
+      timestampData: true,
+      autoload: true
+    });
+    let conf = await vdb.findOne({type: 'config'});
+    console.log(conf);
+    if(conf === null || conf.started==false) continue;
+    else{
+      let students = await vdb.count({type: 'record'});
+      if(conf.ended){
+        let price = await vdb.findOne({type: "price"});
+        data[i] = {
+          type: 'ended',
+          students,
+          price,
+          day: i
+        };
+      }
+      else{
+        data[i] = {
+          type: 'started',
+          students,
+          day: i
+        };
+      }
+    }
+  }
+  return data;
 });
 
 let generateWS = (wb, shotname, name, st, data, stCell) => {
@@ -234,12 +270,13 @@ promiseIpc.on('generateExcel', async (e) => {
     else{
       let students = await vdb.find({type: 'record'});
       let price = await vdb.findOne({type: "price"});
-      data.push({
+      data[i] = {
         students,
         price,
         id: i
-      });
+      };
     }
+    return data;
   }
   console.log(data);
   let db = nedb({
