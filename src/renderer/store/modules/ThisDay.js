@@ -1,8 +1,8 @@
-import nedb from "nedb-promise";
 import path from "path";
 import {DateTime} from "luxon"
 import mkdir from 'mkdirp';
 import bll from 'blob-to-buffer';
+import TheDay from "@/components/TheDay";
 let fs = require('fs');
 let util = require('util');
 const writeFile = util.promisify(fs.writeFile);
@@ -15,17 +15,11 @@ function getCanvasBlob(canvas, ...p) {
     }, ...p)
   })
 }
-let {app, getGlobal} = require('electron').remote;
-let db = null;
-let config = getGlobal('config');
+// let {app} = require('electron').remote;
+import {getGlobal} from "@/components/utils";
+
+let Day = null;
 let timeNow = DateTime.local();
-
-async function update(db, need, replaced) {
-  let i = await db.findOne(need);
-  if (i === null) throw Error('NOT FOUND: ' + JSON.stringify(need));
-  return await db.update(i, {$set: replaced});
-}
-
 const state = {
   initialized: false,
   started: false,
@@ -60,70 +54,31 @@ const mutations = {
   setLoadingState(state, st){
     state.loading = st;
   },
-  setClosedDayState(state, st){
-    state.hasNoClosedDay = st;
-  },
 }
 
 const actions = {
   async init({dispatch, commit}) {
     commit('setLoadingState', true);
-    let m = timeNow.month, d = timeNow.day;
-    if(config.has('opened')){
-      let mm = config.get('opened.month') || m;
-      let dd = config.get('opened.day') || d;
-      if(mm!==m || dd!==d){
-        m = mm;
-        d = dd;
-        commit('setClosedDayState', true);
-      }
-    }
-    db = nedb({
-      filename: path.join(app.getPath('userData'), 'data/' + m + '/' + d + '.json'),
-      timestampData: true,
-    });
-    await db.loadDatabase();
-    let conf = await db.findOne({type: 'config'});
-    if (conf === null) await db.insert({type: 'config', started: false, ended: false});
-    else commit('setStartState', [conf.started, conf.ended, m,d]);
-    commit('setList', (await db.find({type: 'record'})).sort((a,b)=>b.createdAt-a.createdAt));
+    let m = DateTime.local().month, d = DateTime.local().day;
+    Day = new TheDay(m,d);
+    await Day.load();
+    commit('setStartState', [Day.config.started, Day.config.ended, m,d]);
+    commit('setList', await Day.getRecords());
     commit('setLoadingState', false);
     commit('init');
-    return db;
   },
   async startSession({commit, state}) {
-    if (state.started) throw Error('Сессия уже открыта');
-    await update(db, {type: 'config'}, {started: true});
+    await Day.startDay();
     commit('setStartState', [true, false]);
-    config.set('opened.month', state.month);
-    config.set('opened.day', state.day);
     return true;
   },
   async closeSession({commit, state, dispatch}, pl) {
     console.log(pl);
-    if (!state.started) throw Error('Сессия еще не открыта');
-    if(state.listOfRecords.length>0) {
-      await update(db, {type: 'config'}, {started: true, ended: true});
-      await db.insert({type: 'price', ...pl});
-      commit('setStartState', [true, true]);
-    }else{
-      await update(db, {type: 'config'}, {started: false, ended: false});
-      commit('setStartState', [false, false]);
-    }
-    config.delete('opened');
-    if(state.hasNoClosedDay){
-      commit('setClosedDayState', false);
-      dispatch("init");
-    }
+    await Day.endDay(pl.free, pl.notFree);
     return false;
   },
   async addStudent({commit, state, dispatch}, st) {
-    let {id} = st;
-    if (!state.started) throw Error('Сессия не открыта');
-    let f = await db.findOne({type: 'record', id});
-    if (f !== null) throw {'message': 'Ученик уже записан', data: {student: st.st, record: f}};
-    // let url = await dispatch('createImageUrl', {rd: st, imagedata: st.img});
-    let rd = await db.insert({type: 'record', id});
+    let rd = await Day.recordStudent(st);
     commit('pushRecord', rd);
     return rd;
   },
@@ -134,7 +89,7 @@ const actions = {
     canvas.height = imagedata.height;
     ctx.putImageData(imagedata, 0, 0);
     let b = await getCanvasBlob(canvas,'image/webp', 0.4);
-    let url = path.join(app.getPath('userData'), 'data/' + timeNow.month + '/' + timeNow.day + '/'+rd.id+'.webp');
+    let url = path.join(getGlobal('userPath'), 'data/' + timeNow.month + '/' + timeNow.day + '/'+rd.id+'.webp');
     await mkdirp(path.dirname(url));
     await writeFile(url, await tobuff(b));
     return 'file://'+url;

@@ -51,6 +51,7 @@ function createWindow() {
 }
 
 global.config = new Config();
+global.userPath = app.getPath('userData');
 
 app.on('ready', () => {
   createWindow()
@@ -194,9 +195,10 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
   ws.row(1).setHeight(25);
   ws.row(3).freeze();
   ws.column(1).setWidth(33);
-  for (let i = 0; i < data.length; i++) {
+  for (let i in data) {
+    console.log(i);
     ws.column(2 + i).setWidth(6);
-    ws.cell(3, 2 + i).string(data[i].id + '').style(stCell);
+    ws.cell(3, 2 + i).string(data[i].day + '').style(stCell);
   }
   ws.column(1 + data.length + 1).setWidth(10);
   ws.column(1 + data.length + 2).setWidth(12);
@@ -205,21 +207,13 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
     ws.cell(last, 1).string(st[i].name).style(border);
     for (let j = 0; j < data.length; j++) {
       console.log(data[j].students,st[i]);
-      if (findIndex(data[j].students, (e) => e.id === st[i].id) !== -1) {
-        console.log('ok');
+      if (findIndex(data[j].students, (e) => e.studentID === st[i].studentID) !== -1) {
         ws.cell(last, 2 + j).number(st[i].pays ? data[j].price.notFree : data[j].price.free).style(border).style(dem);
       }
     }
     ws.cell(last, 2 + data.length).formula('SUM(' + xl.getExcelCellRef(last, 2) + ":" + xl.getExcelCellRef(last, 1 + data.length) + ")").style(dem);
     ws.cell(last, 2 + data.length + 1).formula('COUNT(' + xl.getExcelCellRef(last, 2) + ":" + xl.getExcelCellRef(last, 1 + data.length) + ")");
-    if(i%2===1) ws.cell(last, 1, last, 1+data.length+2).style({
-      fill:{
-        type: 'pattern',
-        patternType: 'gray125',
-        bgColor: 'white',
-        fgColor: '#d9d9d9'
-      }
-    });
+    if(i%2===1) ws.cell(last, 1, last, 1+data.length+2).style({fill:{type: 'pattern',patternType: 'gray125',bgColor: 'white',fgColor: '#d9d9d9'}});
     last++;
   }
   ws.cell(last, 1).string("Сумма").style(styleRight).style(stTableH);
@@ -236,14 +230,7 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
   ws.cell(2, 1, last, 3 + data.length).style(border);
   ws.cell(2, 1 + data.length + 1, last, 1 + data.length + 1).style(borderLeft);
   ws.cell(last - 1, 1, last - 1, 1 + data.length + 2).style(borderTop);
-  let stC = {
-    fill: {
-      type: 'pattern',
-      patternType: 'solid',
-      bgColor: '#f2f2f2',
-      fgColor: '#f2f2f2'
-    }
-  }
+  let stC = {fill: {type: 'pattern', patternType: 'solid', bgColor: '#f2f2f2', fgColor: '#f2f2f2'}};
   ws.cell(2,1+data.length+1, last, 1+data.length+2).style(stC);
   ws.cell(last-1,2, last, 1+data.length+2).style(stC);
   ws.setPrintArea(2,1,last, 1+data.length+2);
@@ -251,84 +238,53 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
 };
 let monthNames = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь',];
 import nedb from "nedb-promise";
+import TheDay from "@/components/TheDay";
+import TheStudent from "@/components/TheStudent";
 
 promiseIpc.on('generateExcel', async (e) => {
   console.log(e);
   let mth = e.month;
   let data = [];
   for (let i = 1; i < 32; i++) {
-    let p = path.join(app.getPath('userData'), 'data/' + mth + '/' + i + '.json');
-    if (!fs.existsSync(p)) continue;
-    let vdb = nedb({
-      filename: p,
-      timestampData: true,
-      autoload: true
-    });
-    let conf = await vdb.findOne({type: 'config'});
-    console.log(conf);
-    if(conf === null || conf.started==false || conf.ended==false) continue;
+    let Day = new TheDay(mth,i);
+    if (!fs.existsSync(Day.filename)) continue;
+    await Day.load();
+    if(Day.config.started==false || Day.config.ended==false) continue;
     else{
-      let students = await vdb.find({type: 'record'});
-      let price = await vdb.findOne({type: "price"});
-      data[i] = {
+      let students = await Day.getRecords();
+      let price = await Day.getPrice();
+      data.push({
         students,
         price,
-        id: i
-      };
+        day: i
+      });
     }
-    return data;
+    // return data;
   }
-  console.log(data);
-  let db = nedb({
-    filename: path.join(app.getPath('userData'), 'students.json'),
-    timestampData: true,
-    autoload: true
-  });
+  let db = await TheStudent.getDB('students.json');
+  await db.loadDatabase();
   let wb = new xl.Workbook({});
   let styleCentered = {alignment: {horizontal: 'center', vertical: 'center'}};
-  let border = {
-    border: {
-      left: {
-        style: 'thin',
-        color: 'black',
-      },
-      right: {
-        style: 'thin',
-        color: 'black',
-      },
-      top: {
-        style: 'thin',
-        color: 'black',
-      },
-      bottom: {
-        style: 'thin',
-        color: 'black',
-      },
-      outline: false,
-    },
-  };
   let stCell = wb.createStyle(merge({}, styleCentered));
-  console.log(stCell);
-  let classes = uniqWith(await db.find({}), (a, b) => a.group == b.group).map((e) => e.group).sort();
-  let st = await db.find({});
-  let mntn = monthNames[mth-1];
-  generateWS(wb, 'Общая', "Общий отчёт питания по всей школе за " + mntn, st, data, stCell);
-  st = await db.find({pays: true});
-  generateWS(wb, 'Общая П', "Общий отчёт платного питания по всей школе за " + mntn, st, data, stCell);
-  st = await db.find({pays: false});
-  generateWS(wb, 'Общая Б', "Общий отчёт бесплатного питания по всей школе за " + mntn, st, data, stCell);
+  let students = await TheStudent.loadAll(db);
+  let classes = uniqWith(students, (a, b) => a.group == b.group).map((e) => e.group).sort();
+  let mntn = monthNames[mth - 1];
+  generateWS(wb, 'Общая', "Общий отчёт питания по всей школе за " + mntn, students, data, stCell);
+  students = await TheStudent.loadAll(db, {pays: true});
+  generateWS(wb, 'Общая П', "Общий отчёт платного питания по всей школе за " + mntn, students, data, stCell);
+  students = await TheStudent.loadAll(db, {pays: false});
+  generateWS(wb, 'Общая Б', "Общий отчёт бесплатного питания по всей школе за " + mntn, students, data, stCell);
   for (let i = 0; i < classes.length; i++) {
-    st = await db.find({pays: true, group: classes[i]});
-    if (st.length > 0) {
-      generateWS(wb, classes[i] + ' П', "Отчёт платного питания " + classes[i] + " класса за " + mntn, st, data, stCell);
+    students = await TheStudent.loadAll(db, {pays: true, group: classes[i]});
+    if (students.length > 0) {
+      generateWS(wb, classes[i] + ' П', "Отчёт платного питания " + classes[i] + " класса за " + mntn, students, data, stCell);
     }
-    st = await db.find({pays: false, group: classes[i]});
-    if (st.length > 0) {
-      generateWS(wb, classes[i] + ' Б', "Отчёт бесплатного питания " + classes[i] + " класса за " + mntn, st, data, stCell);
+    students = await TheStudent.loadAll(db, {pays: false, group: classes[i]});
+    if (students.length > 0) {
+      generateWS(wb, classes[i] + ' Б', "Отчёт бесплатного питания " + classes[i] + " класса за " + mntn, students, data, stCell);
     }
   }
-  ;
-
+  console.log('saving');
   dialog.showSaveDialog(mainWindow, {
     title: 'Сохранение таблицы',
     defaultPath: 'Полный отчёт питания школы за '+mntn,

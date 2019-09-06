@@ -76,7 +76,7 @@ Vue.use({
         }
         NProgress.done(e);
       };
-      return p.then(done,function(e){console.error(arguments); done(e);});
+      return p.then(done,function(e){throw e; done(e);});
     };
   }
 });

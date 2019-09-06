@@ -7,21 +7,17 @@ let util = require('util');
 const writeFile = util.promisify(fs.writeFile);
 const mkdirp = util.promisify(mkdir);
 const unlink = util.promisify(fs.unlink);
-let {app, getGlobal} = require('electron').remote;
+// let {app, getGlobal} = require('electron').remote;
+import {getGlobal} from "@/components/utils";
+
 let db = null;
 let config = getGlobal('config');
 let timeNow = DateTime.local();
-
-async function update(db, need, replaced, many = false) {
-  let i = await db.findOne(need);
-  if (i === null) throw Error('NOT FOUND: ' + JSON.stringify(need));
-  return await db.update(i, {$set: replaced}, {multi: many});
-}
+import {RuntimeError, update} from '@/components/utils';
 export default class TheDay{
   constructor(month,day){
     this.month = month; this.day = day;
-    this.filename = path.join(app.getPath('userData'), 'data/' + month + '/' + day + '.json');
-    console.log(this.filename)
+    this.filename = path.join(getGlobal('userPath'), 'data/' + month + '/' + day + '.json');
     this.db = nedb({
       filename: this.filename,
       timestampData: true,
@@ -38,8 +34,10 @@ export default class TheDay{
     await update(this.db, {type: 'config'}, {started: true});
     this.config.started = true;
   }
-  async endDay(freePrice,notFreePrice){
+  mustOpened(){
     if (!this.config.started) throw Error('Сессия еще не открыта');
+  }
+  async endDay(freePrice,notFreePrice){
     if (this.config.ended) throw Error('Сессия уже закрыта');
     if(await this.db.count({type: 'record'})>0) {
       await update(this.db, {type: 'config'}, {started: true, ended: true});
@@ -49,20 +47,34 @@ export default class TheDay{
       await update(this.db, {type: 'config'}, {started: false, ended: false});
       this.config.started = false;
     }
+    return true;
+  }
+  mustEnded(){
+    if (!this.config.ended) throw Error('Сессия не закрыта');
   }
   async editPrice(freePrice,notFreePrice){
-    if (!this.config.started) throw Error('Сессия еще не открыта');
-    if (!this.config.ended) throw Error('Сессия не закрыта');
+    this.mustOpened();
     return update(this.db, {type: 'price'}, {free: freePrice, notFree: notFreePrice});
   }
-  async recordStudent(studentID){
-    if (!this.config.started) throw Error('Сессия не открыта');
-    let f = await this.db.findOne({type: 'record', id: studentID});
-    if (f !== null) throw {'message': 'Ученик уже записан', data: {studentID, record: f}};
-    return await this.db.insert({type: 'record', studentID});
+  async getPrice(){
+    return await this.db.findOne({type:'price'});
+  }
+  async recordStudent(student){
+    this.mustOpened();
+    let f = await this.db.findOne({type: 'record', studentID: student.studentID});
+    if (f !== null) throw new RuntimeError(4,{student, record: f});
+    return await this.db.insert({type: 'record', studentID: student.studentID, pays: student.pays});
+  }
+  async getList({withWhoPays = true, withWhoNotPays = true, count = false, group}){
+    try{this.mustOpened();}catch (e) {return [];}
+    if(!withWhoPays && !withWhoNotPays) {console.warn('Запрос на получение никого');return [];}
+    return await this.db[count?'count':'find']({ type: 'record',pays: withWhoPays && withWhoNotPays?undefined:withWhoPays})
   }
   async removeDay(){
     this.db = null;
     await unlink(this.filename);
+  }
+  async getRecords(){
+    return (await this.getList({})).sort((a,b)=>b.createdAt-a.createdAt);
   }
 }

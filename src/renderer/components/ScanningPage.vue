@@ -37,7 +37,7 @@
             <div>
           <b-list-group  class="ScanningPageList">
             <b-list-group-item v-for="(qr,i) in scannedList" href="#" v-scrollInto="i===selected" :active="i===selected" :key="i" @click="viewCard(i)">
-              {{$store.state.Students.students[qr.id].name}}
+              {{$store.state.Students.students[qr.studentID].name}}
 <!--              <span>{{qr.createdAt | formatTime}}</span>-->
             </b-list-group-item>
           </b-list-group>

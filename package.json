@@ -66,6 +66,7 @@
     "bluebird": "^3.5.5",
     "bootstrap": "^4.3.1",
     "bootstrap-vue": "^2.0.0-rc.19",
+    "condense-whitespace": "^2.0.0",
     "crypto-js": "^3.1.9-1",
     "data-collection": "^1.1.6",
     "electron-promise-ipc": "^1.2.2",
