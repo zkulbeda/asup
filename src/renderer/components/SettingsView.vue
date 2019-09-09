@@ -6,6 +6,8 @@
       <b-button @click="openPath">Открыть папку с программой</b-button>
       <b-button @click="$wait(importStudents())">Импорт базы учеников</b-button>
       <b-button @click="$wait(exportStudents())">Экспорт базы учеников</b-button>
+      <b-button @click="$wait(exportZip())">Экспорт базы</b-button>
+      <b-button @click="$wait(importZip())">Импорт базы</b-button>
       <b-button @click="$wait(toKioskMode())">Режим киоска</b-button>
     </b-row>
   </b-card>
@@ -69,6 +71,12 @@
           properties: ['openFile']
         });
         fs.copyFileSync(path.join(app.getPath('userData'), 'students.json'), filepath);
+      },
+      async exportZip(){
+        await promiseIpc.send('exportZip');
+      },
+      async importZip(){
+        await promiseIpc.send('importZip');
       },
       async toKioskMode(){
         await promiseIpc.send('changeKioskMode',true);

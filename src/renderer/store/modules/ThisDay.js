@@ -77,7 +77,7 @@ const actions = {
     await Day.endDay(pl.free, pl.notFree);
     return false;
   },
-  async addStudent({commit, state, dispatch}, st) {
+  async addStudent({commit, state, dispatch}, {st}) {
     let rd = await Day.recordStudent(st);
     commit('pushRecord', rd);
     return rd;

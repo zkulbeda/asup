@@ -1,4 +1,4 @@
-import {app, BrowserWindow, ipcMain, dialog, ipcRenderer} from 'electron'
+import {app, BrowserWindow, ipcMain, dialog, ipcRenderer, shell} from 'electron'
 //import '../renderer/store'
 import xl from 'excel4node';
 import merge from 'lodash/merge';
@@ -8,6 +8,8 @@ import Config from 'electron-store'
 import promiseIpc from 'electron-promise-ipc';
 import uniqWith from 'lodash/uniqWith';
 import findIndex from 'lodash/findIndex'
+import tempy from 'tempy'
+import {getGlobal} from "@/components/utils";
 
 /**
  * Set `__static` path to static files in production
@@ -129,6 +131,7 @@ promiseIpc.on('getMonthData', async({month})=>{
 });
 
 let generateWS = (wb, shotname, name, st, data, stCell) => {
+  console.log(data);
   let styleCentered = {alignment: {horizontal: 'center', vertical: 'center'}};
   let styleRight = merge({}, styleCentered, {alignment: {horizontal: 'right', indent: 1}});
   let border = {
@@ -195,25 +198,28 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
   ws.row(1).setHeight(25);
   ws.row(3).freeze();
   ws.column(1).setWidth(33);
+  let k = 0;
   for (let i in data) {
-    console.log(i);
-    ws.column(2 + i).setWidth(6);
-    ws.cell(3, 2 + i).string(data[i].day + '').style(stCell);
+    ws.column(2 + k).setWidth(6);
+    console.log(data[i].day + '', k);
+    ws.cell(3, 2 + k).string(data[i].day + '').style(stCell);
+    k++;
   }
   ws.column(1 + data.length + 1).setWidth(10);
   ws.column(1 + data.length + 2).setWidth(12);
   let last = 4;
+  k = 0;
   for (let i in st) {
     ws.cell(last, 1).string(st[i].name).style(border);
     for (let j = 0; j < data.length; j++) {
-      console.log(data[j].students,st[i]);
+      console.log(data[j].students);
       if (findIndex(data[j].students, (e) => e.studentID === st[i].studentID) !== -1) {
         ws.cell(last, 2 + j).number(st[i].pays ? data[j].price.notFree : data[j].price.free).style(border).style(dem);
       }
     }
     ws.cell(last, 2 + data.length).formula('SUM(' + xl.getExcelCellRef(last, 2) + ":" + xl.getExcelCellRef(last, 1 + data.length) + ")").style(dem);
     ws.cell(last, 2 + data.length + 1).formula('COUNT(' + xl.getExcelCellRef(last, 2) + ":" + xl.getExcelCellRef(last, 1 + data.length) + ")");
-    if(i%2===1) ws.cell(last, 1, last, 1+data.length+2).style({fill:{type: 'pattern',patternType: 'gray125',bgColor: 'white',fgColor: '#d9d9d9'}});
+    if(k%2===1) ws.cell(last, 1, last, 1+data.length+2).style({fill:{type: 'pattern',patternType: 'gray125',bgColor: 'white',fgColor: '#d9d9d9'}});
     last++;
   }
   ws.cell(last, 1).string("Сумма").style(styleRight).style(stTableH);
@@ -242,7 +248,6 @@ import TheDay from "@/components/TheDay";
 import TheStudent from "@/components/TheStudent";
 
 promiseIpc.on('generateExcel', async (e) => {
-  console.log(e);
   let mth = e.month;
   let data = [];
   for (let i = 1; i < 32; i++) {
@@ -285,7 +290,7 @@ promiseIpc.on('generateExcel', async (e) => {
     }
   }
   console.log('saving');
-  dialog.showSaveDialog(mainWindow, {
+  await dialog.showSaveDialog(mainWindow, {
     title: 'Сохранение таблицы',
     defaultPath: 'Полный отчёт питания школы за '+mntn,
     filters: [{name: 'Таблица Excel', extensions: ['xlsx']}]
@@ -294,4 +299,111 @@ promiseIpc.on('generateExcel', async (e) => {
       fs.writeFileSync(file, buf);
     })
   });
+});
+
+import Zip from 'adm-zip';
+import {RuntimeError} from "@/components/utils";
+promiseIpc.on('exportZip', async(e)=>{
+  let url = path.join(app.getPath('userData'), 'data/');
+  let arch = new Zip();
+  arch.addLocalFile(path.join(app.getPath('userData'),'students.json'),'');
+  for(let e = 1; e<13; e++){
+    if(fs.existsSync(path.join(url, e + '/'))) {
+      for (let i = 1; i < 32; i++) {
+        let file = e + '/' + i + '.json';
+        let p = path.join(url, file);
+        if (!fs.existsSync(p)) continue;
+        let vdb = nedb({
+          filename: p,
+          timestampData: true,
+          autoload: true
+        });
+        let conf = await vdb.findOne({type: 'config'});
+        if (conf === null || conf.started == false) continue;
+        arch.addLocalFile(p,'data/'+e + '/');
+      }
+    }
+  };
+
+  await dialog.showSaveDialog(mainWindow, {
+    title: 'Сохранение базы данных',
+    defaultPath: 'База данных школьного питания',
+    filters: [{name: 'Архив', extensions: ['zip']}]
+  }, (file) => {
+    arch.writeZip(file);
+  });
+});
+
+promiseIpc.on('importZip', async(e)=>{
+  let url = path.join(app.getPath('userData'), 'data/');
+  let file = await dialog.showOpenDialog(mainWindow, {
+    title: 'Открытие базы данных',
+    filters: [{name: 'Архив', extensions: ['zip']}]
+  });
+  let arch = new Zip(file);
+  let studentsfile = tempy.file({extension:'.json'});
+  let db = nedb({
+    filename: studentsfile,
+    autoload: true
+  });
+  let st = await db.find({});
+  let studentDB = TheStudent.getDB('students.json');
+  let d = null, countSt = 0;
+  try {
+    for(let i in st){
+      d = st[i];
+      await TheStudent.newOrEdit(studentDB,st[i]);
+      countSt++;
+    }
+  }catch (e) {
+    console.log('error in', d);
+    console.error(e);
+    dialog.showMessageBox(getGlobal('mainWindow'),{
+      title: 'Импорт выполнен частично',
+      message: 'Импорт выполен частично. Произошла ошибка.',
+      detail: 'Количество импортированных учеников: '+count
+    });
+  }
+  let recordspath = tempy.directory();
+  arch.extractAllTo(recordspath, true);
+  url = path.join(recordspath,'data/');
+  shell.showItemInFolder(recordspath);
+  for(let e = 1; e<13; e++){
+    if(fs.existsSync(path.join(url, e + '/'))) {
+      for (let i = 1; i < 32; i++) {
+        let file = e + '/' + i + '.json';
+        let p = path.join(url, file);
+        if (!fs.existsSync(p)) continue;
+        let vdb = nedb({
+          filename: p,
+          timestampData: true,
+          autoload: true
+        });
+        let conf = await vdb.findOne({type: 'config'});
+        if (conf === null || conf.started == false) continue;
+        let day = new TheDay(e,i);
+        await day.load();
+        let rds = await vdb.find({type: 'record'});
+        for(let rdi in rds){
+          let st = TheStudent.loadFromID(studentDB,rds[rdi].studentID,false);
+          if(!st) dialog.showMessageBox(getGlobal('mainWindow'),{
+            message: 'Ученик не был вставлен.',
+            detail: 'Месяц:'+e+', день:'+i+' id:'+rds[rdi].studentID
+          });
+          try{
+            await day.recordStudent(st);
+          }catch (e) {
+            if(!(e instanceof RuntimeError)){
+              throw e;
+            }
+          }
+        }
+      }
+    }
+  };
+  dialog.showMessageBox(getGlobal('mainWindow'),{
+    title: 'Импорт выполен успешно',
+    message: 'Импорт выполен успешно',
+  });
+
 });

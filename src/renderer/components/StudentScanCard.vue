@@ -30,7 +30,6 @@
         name: "StudentScanCard",
         computed: {
             hasStudent(){
-                console.log(this.data);
                 return this.data!==null;
             }
         },

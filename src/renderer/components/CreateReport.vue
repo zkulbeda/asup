@@ -1,5 +1,16 @@
 <template>
   <b-card v-show="!loading">
+    <template v-if="options.length==0">
+      <b-row>
+        <b-col class="text-center CreateReportPage">
+          <div class="">
+            <h2>Нет открытых дней</h2>
+            <p class="mt-2">Вы еще не разу не использовали нашу программу. <br>Откройте день во вкладке <router-link to="/scanning-page">Сканирование</router-link></p>
+          </div>
+        </b-col>
+      </b-row>
+    </template>
+    <template v-else>
     <b-row>
     <b-col class="text-center CreateReportPage">
       <div class="">
@@ -41,6 +52,7 @@
       </div>
     </div>
     <CloseDayReportModel @opened="beforeOpenModal" @closed="afterCloseModal"></CloseDayReportModel>
+    </template>
   </b-card>
 </template>
 

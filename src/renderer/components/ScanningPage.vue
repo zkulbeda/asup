@@ -119,7 +119,7 @@
       },
       currentCard(){
         if(this.selected!==null)
-          return {st: this.$store.state.Students.students[this.scannedList[this.selected].id], rd: this.scannedList[this.selected]};
+          return {st: this.$store.state.Students.students[this.scannedList[this.selected].studentID], rd: this.scannedList[this.selected]};
         else return null;
       }
     },
@@ -141,20 +141,27 @@
       async onDetect(promise) {
         try {
           const all = promise;
-          console.log(all)
+          console.groupCollapsed('Код: '+all.content)
+          console.log(all);
           //let img = imagedata_to_image(all.imageData);
           // let img = await this.$store.dispatch('ThisDay/createImageUrl', {rd:{id: all.content, }, imagedata: all.imageData})
           let {st, rd} = await this.$store.dispatch("Students/record", {id: all.content, img: all.imageData});
           console.log(st);
+          console.log(rd);
           this.selected = 0;
+          this.error = null;
           // ...
         } catch (error) {
+          console.dir(error);
           if (error.message === "Ученик уже записан") {
-            let f = this.scannedList.findIndex((e)=>error.data.record._id===e.id);
+            let f = this.scannedList.findIndex((e)=>error.data.record._id===e._id);
             this.selected = f!==-1?f:null;
-            this.error = error.message;
+          }else{
+            this.selected = null;
           }
-          console.log(error);
+          this.error = error.message;
+        }finally {
+          console.groupEnd();
         }
       },
       openThisDay() {

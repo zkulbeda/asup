@@ -29,7 +29,7 @@ export class RuntimeError extends Error{
   constructor(code, data = null){
     super(messages[code]);
     this.code = code;
-    this.data = null;
+    this.data = data;
   }
   toString(){
     return this.message+'('+this.code+'):'+JSON.stringify(this.data);

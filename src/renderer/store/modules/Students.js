@@ -20,10 +20,13 @@ const mutations = {
     } else state.initialized = true;
   },
   setStudents(state, pl) {
-    state.students = keyBy(pl, 'studentID');
+    state.students = keyBy(pl.map((e)=>e.toJSON()), 'studentID');
   },
   addStudent(state, pl) {
-    state.students[pl.id] = pl;
+    state.students[pl.studentID] = pl.toJSON();
+  },
+  editStudent(state,st){
+    state.students[st.studentID] = st.toJSON();
   },
   setLoadingState(state, st) {
     state.loading = st;
@@ -39,7 +42,7 @@ const actions = {
     await dispatch('refreshStudents');
     commit('init');
     commit('setLoadingState', true);
-    return db;
+    //return db;
   },
   async refreshStudents({commit}) {
     let res = await TheStudent.loadAll(db);
@@ -61,6 +64,15 @@ const actions = {
     let newStudent = await TheStudent.new(db,pl);
     commit('addStudent', newStudent);
     return newStudent;
+  },
+  async editStudent({commit,dispatch}, {studentID,name,pays,group}) {
+    let student = await TheStudent.loadFromID(db,studentID);
+    student.name = name;
+    student.pays = pays;
+    student.group = group;
+    student.save();
+    commit('editStudent', student);
+    return student;
   },
   async find({}, id) {
     return await TheStudent.loadFromCode(db,id,false);

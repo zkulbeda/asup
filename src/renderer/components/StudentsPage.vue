@@ -50,6 +50,7 @@
             <FileDownloadIcon class="top-1px"></FileDownloadIcon>Печать в PDF
           </template>
           <b-dropdown-item @click="$wait(print())"><PrinterIcon></PrinterIcon>Распечатать</b-dropdown-item>
+          <b-dropdown-item v-if="selected.length==1" @click="edit"><EditIcon></EditIcon>Изменить</b-dropdown-item>
           <b-dropdown-item @click="remove"><DeleteIcon></DeleteIcon>Удалить</b-dropdown-item>
           <b-dropdown-item @click="reident"><ReAddIcon></ReAddIcon>Изменить идентификатор</b-dropdown-item>
           <b-dropdown-divider></b-dropdown-divider>
@@ -97,6 +98,7 @@
   import FileDownloadIcon from 'icons/FileDownload';
   import PrinterIcon from 'icons/Printer';
   import DeleteIcon from 'icons/Delete';
+  import EditIcon from 'icons/AccountEdit';
   import ReAddIcon from 'icons/AccountConvert';
   import toNormalModeIcon from 'icons/FormatListChecks';
   import toOnlyCheckModeIcon from 'icons/CheckboxMultipleMarked';
@@ -112,8 +114,8 @@
   }
   export default {
     name: "StudentsPage",
-    components:{FileDownloadIcon, QrIcon,ScanningStudentCardModel,StudentDangerActionModel,AdAccIcon,PrinterIcon,DeleteIcon,ReAddIcon,
-      toNormalModeIcon,toOnlyCheckModeIcon,CheckAllIcon,ClearCheckIcon},
+    components:{FileDownloadIcon, QrIcon,ScanningStudentCardModel,StudentDangerActionModel,AdAccIcon,PrinterIcon,EditIcon,
+      DeleteIcon,ReAddIcon, toNormalModeIcon,toOnlyCheckModeIcon,CheckAllIcon,ClearCheckIcon},
     data() {
       return {
         size: 0,
@@ -265,6 +267,9 @@
         let data = doc.output('datauristring').split(',')[1];
         fs.writeFileSync(path.join(app.getPath('temp'),'./print.pdf'), data,'base64');
         shell.openExternal('file://'+path.join(app.getPath('temp'),'./print.pdf'));
+      },
+      edit(){
+        return this.$router.push({path: '/edit-student',query:{studentID: this.selected[0]}});
       },
       rowClick(d){
         let i = this.selected.indexOf(d.studentID);

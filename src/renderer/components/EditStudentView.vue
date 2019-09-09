@@ -2,7 +2,7 @@
   <b-card style="max-width: 600px;">
     <b-row>
       <b-col class="">
-        <h3 class="mb-4 mt-2 text-center">Создание карты питания ученика</h3>
+        <h3 class="mb-4 mt-2 text-center">Изменение карты питания ученика</h3>
         <b-form @submit="end" @submit.stop.prevent>
           <b-form-group id="name-group" label="ФИО ученика: " label-for="name" label-cols="3" label-align="right">
             <b-form-input if="name" v-model="name" required
@@ -34,12 +34,7 @@
               label-cols="3"
           >
             <div class="d-flex justify-content-between align-items-center">
-              <b-button v-if="!isCanEndAdding" @click="check" type="submit" variant="primary">Добавить{{added.length>0&&!addMore?' и закончить добавление':''}}</b-button>
-              <b-button v-else @click="endAdding" variant="primary">Закончить добавление</b-button>
-              <b-form-checkbox
-                  v-model="addMore"
-              >Добавить ещё
-              </b-form-checkbox>
+              <b-button @click="check" type="submit" variant="primary">Сохранить</b-button>
             </div>
           </b-form-group>
         </b-form>
@@ -64,8 +59,8 @@
         name: null,
         group: null,
         paysVal: true,
-        addMore: false,
-        added: []
+        added: [],
+        studentID: null
       }
     },
     computed:{
@@ -81,6 +76,18 @@
           return Validator.value(v).required().regex(/^(1[0-1]|[5-9])([А-Я])?$/, "Формат класса: число от 5 до 11 и буква без пробела")
         },
     },
+    mounted(){
+      if(!this.$route.query.studentID || this.$store.state.Students.students[this.$route.query.studentID]===undefined){
+        console.error('Редактирование ученика - параметр не указан');
+        this.$router.back();
+      }else{
+        let student = this.$store.state.Students.students[this.$route.query.studentID];
+        this.name = student.name;
+        this.group = student.group;
+        this.paysVal = student.pays;
+        this.studentID = student.studentID;
+      }
+    },
     methods: {
       check() {
         this.name = this.name || '';
@@ -94,25 +101,17 @@
           this.check();
           return;
         }
-        let st = await this.$store.dispatch('Students/insertStudent', {
+        let st = await this.$store.dispatch('Students/editStudent', {
+          studentID: this.studentID,
           name: this.name,
           group: this.group,
           pays: this.paysVal
         });
         console.log(st);
-        this.added.push(st.id);
-        if (this.addMore) {
-          this.name = null;
-          this.paysVal = true;
-          this.validation.reset();
-          let temp = this.group;
-          this.group = ''; this.$nextTick(()=>{this.group = temp;});
-        }else{
-          this.endAdding();
-        }
+        this.endAdding();
       },
       endAdding(){
-        this.$router.push({path: '/students',query:{selected: this.added}});
+        this.$router.push({path: '/students',query:{selected: [this.studentID]}});
       },
       classFormat(v) {
         return v.toUpperCase();

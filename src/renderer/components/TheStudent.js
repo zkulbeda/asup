@@ -60,6 +60,19 @@ export default class TheStudent{
     let inst = await db.insert({studentID, code, name, group, pays});
     return new this(inst,db);
   }
+  static async newOrEdit(db, st){
+    let inst = null;
+    if(st.studentID) inst = await this.loadFromID(db,st.studentID, false);
+    if(!inst) return await this.new(db,st);
+    else {
+      inst.name = st.name?st.name:inst.name;
+      inst.group = st.group?st.group:inst.group;
+      inst.pays = st.pays!==undefined?st.pays:inst.pays;
+      await inst.save();
+      return false;
+    }
+    return true;
+  }
   static async loadFromID(db,studentID, throws = true){
     let rec = await db.findOne({studentID});
     if(rec){
@@ -70,7 +83,10 @@ export default class TheStudent{
     }
   }
   static async loadFromCode(db,code, throws = true){
+    console.log('start')
+    console.log(db,code);
     let rec = await db.findOne({code});
+    console.log('after')
     if(rec){
       return new this(rec,db);
     }else{
@@ -80,7 +96,6 @@ export default class TheStudent{
   }
   static async loadAll(db, request = {}){
     let recs = await db.find(request);
-    console.log(recs);
     let r = [];
     for(let i in recs){
       r.push(new this(recs[i],db));

@@ -26,6 +26,11 @@ export default new Router({
       component: require('@/components/AddStudentView').default
     },
     {
+      path: '/edit-student',
+      name: 'edit-student-page',
+      component: require('@/components/EditStudentView').default
+    },
+    {
       path: '/print-student-card',
       name: 'print-student-card-page',
       component: require('@/components/PrintCardView').default

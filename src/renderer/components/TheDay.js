@@ -65,10 +65,17 @@ export default class TheDay{
     if (f !== null) throw new RuntimeError(4,{student, record: f});
     return await this.db.insert({type: 'record', studentID: student.studentID, pays: student.pays});
   }
-  async getList({withWhoPays = true, withWhoNotPays = true, count = false, group}){
+  async getList({withWhoPays = true, withWhoNotPays = true, count = false, group = undefined}){
     try{this.mustOpened();}catch (e) {return [];}
     if(!withWhoPays && !withWhoNotPays) {console.warn('Запрос на получение никого');return [];}
-    return await this.db[count?'count':'find']({ type: 'record',pays: withWhoPays && withWhoNotPays?undefined:withWhoPays})
+    let query = {type: 'record'};
+    if(!(withWhoPays && withWhoNotPays)){
+      query.pays = withWhoPays;
+    }
+    if(group){
+      query.group = group;
+    }
+    return await this.db[count?'count':'find'](query);
   }
   async removeDay(){
     this.db = null;
