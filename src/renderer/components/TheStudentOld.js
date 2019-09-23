@@ -4,7 +4,6 @@ import {update} from '@/components/utils';
 import nedb from "nedb-promise";
 import path from "path";
 import {getGlobal} from "@/components/utils";
-import db from '@/components/db';
 
 export class ValidationError extends Error{
   constructor(message, param, data){
@@ -14,13 +13,14 @@ export class ValidationError extends Error{
   }
 }
 export default class TheStudent{
-  constructor({studentID, code, name, group, pays, _id = null}){
+  constructor({studentID, code, name, group, pays, _id = null}, db = null){
     this.studentID = studentID;
     this.code = code;
     this.name = trim(name);
     this.group = group;
     this.pays = Boolean(pays).valueOf();
     this._id = _id;
+    this.db = db;
   }
   static isValidFromObject({group}){
     if(!(/^(1[0-1]|[5-9])([А-Я])?$/).test(group)){
@@ -35,14 +35,11 @@ export default class TheStudent{
     let id = null;
     do{
       id = genID('0123456789',size);
-    }while((await db('students').select('*').where(param, id))!==null);
+    }while((await db.findOne({[param]:id}))!==null);
     return id;
   }
   toJSON(){
     return {studentID: this.studentID, code: this.code, name: this.name, group: this.group, pays: this.pays}
-  }
-  toJSONSQL(){
-    return {id: this.studentID, code: this.code, name: this.name, group: this.group, pays: this.pays};
   }
   mustDB(){
     if(!this.db) throw new Error('База не передана');
@@ -53,15 +50,15 @@ export default class TheStudent{
   }
   async save(){
     this.mustDBInstance();
-    await db('students').where('id', this._id).update(this.toJSONSQL());
+    await update(this.db, {_id: this._id}, this.toJSON());
   }
-  static async new(dbb, {studentID = null, code = null, name, group, pays}){
+  static async new(db, {studentID = null, code = null, name, group, pays}){
     if(!studentID) studentID = await this.generateID(db, 'studentID');
     if(!code) code = await this.generateID(db, 'code');
     let validationResult = this.isValidFromObject({name,group});
     if(validationResult!==true) throw validationResult;
-    let inst = await db.insert({id: studentID, code, name, group, pays});
-    return new this(inst);
+    let inst = await db.insert({studentID, code, name, group, pays});
+    return new this(inst,db);
   }
   static async newOrEdit(db, st){
     let inst = null;
@@ -76,50 +73,49 @@ export default class TheStudent{
     }
     return true;
   }
-  static async loadFromID(dbb,studentID, throws = true){
-    let rec = await db.select('*').where('id',studentID).limit(1);
+  static async loadFromID(db,studentID, throws = true){
+    let rec = await db.findOne({studentID});
     if(rec){
-      return new this(rec);
+      return new this(rec,db);
     }else{
       if(throws) throw new Error('Ученик не найден');
       else return false;
     }
   }
-  static async loadFromCode(dbb,code, throws = true){
+  static async loadFromCode(db,code, throws = true){
     console.log('start')
     console.log(db,code);
-    let rec = await db.select('*').where('code',code).limit(1);
-    console.log(rec)
+    let rec = await db.findOne({code});
+    console.log('after')
     if(rec){
-      return new this(rec);
+      return new this(rec,db);
     }else{
       if(throws) throw new Error('Ученик не найден');
       else return false;
     }
   }
-  static async loadAll(dbb, request = {}){
-    let recs = await db.select('*').where(request);
+  static async loadAll(db, request = {}){
+    let recs = await db.find(request);
     let r = [];
     for(let i in recs){
-      r.push(new this(recs[i]));
+      r.push(new this(recs[i],db));
     }
     return r;
   }
   static async getDB(filename){
-    return null;
-      // let db = nedb({
-      //   filename: path.join(getGlobal('userPath'), 'students.json'),
-      //   timestampData: true
-      // });
-      // db.ensureIndex({ fieldName: "studentID", unique: true });
-      // db.ensureIndex({ fieldName: "code", unique: true });
-      // return db;
+    let db = nedb({
+        filename: path.join(getGlobal('userPath'), 'students.json'),
+        timestampData: true
+      });
+    db.ensureIndex({ fieldName: "studentID", unique: true });
+    db.ensureIndex({ fieldName: "code", unique: true });
+    return db;
   }
   async remove(){
-    return await db.where('id', this._id).delete();
+    return await this.db.remove({_id: this._id});
   }
   static async removeMany(db,els){
-    return await db.where('id', els).delete();
+    return await db.remove({id:{$in: els}},{multi: true});
   }
   explodeGroup(){
     let rex = /^(1[0-1]|[5-9])([А-Я])?$/;

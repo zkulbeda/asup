@@ -156,6 +156,7 @@
     },
     computed: {
       it() {
+        console.log(this.$store.state.Students.students)
         let res = values(this.$store.state.Students.students);
         if(this.viewSelected){
           if(this.selected.length<1) this.viewSelected=false;
@@ -201,7 +202,7 @@
         this.$modal.show('danger-students-action', {
           type: 'reidentification',
           callback: ()=>{
-            this.$wait(this.$store.dispatch('Students/reidentification', this.selected).then(()=>{this.$modal.hide('danger-students-action'); this.selected = [];}), true, 0);
+            this.$wait(this.$store.dispatch('Students/reidentification', this.selected).then(()=>{this.$modal.hide('danger-students-action'); this.viewSelected = true}), true, 0);
           }
         });
       },

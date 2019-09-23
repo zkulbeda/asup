@@ -11,6 +11,7 @@ import findIndex from 'lodash/findIndex'
 import tempy from 'tempy'
 import {getGlobal} from "@/components/utils";
 
+global.userPath = app.getPath('userData');
 /**
  * Set `__static` path to static files in production
  * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-static-assets.html
@@ -18,12 +19,40 @@ import {getGlobal} from "@/components/utils";
 if (process.env.NODE_ENV !== 'development') {
   global.__static = require('path').join(__dirname, '/static').replace(/\\/g, '\\\\')
 }
-const argv = require('yargs').argv
+const argv = global.args = require('yargs').argv
 let mainWindow
 const winURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080`
   : `file://${__dirname}/index.html`
 global.kiosk_mode = argv.kiosk;
+import { connect } from 'trilogy'
+
+let db = connect(path.join(global.userPath, 'db.db'), {
+  client: 'sql.js'
+})
+global.db = db;
+let initDB = (async ()=>{
+  global.students = await db.model('students', {
+    id: 'increments',
+    code: {type: String, nullable: false},
+    name: {type: String, nullable: false},
+    group: {type: String, nullable: false},
+    pays: {type: Boolean, nullable: false},
+  }, {index: 'code'});
+  global.days = await db.model('days', {
+    id: 'increments',
+    day: {type: Number, nullable: false},
+    free: {type: Number, nullable: true},
+    not_free: {type: Number, nullable: true}
+  },{index: 'day'});
+  global.records = await db.model('records', {
+    id: 'increments',
+    student_id: {type: Number, nullable: false},
+    day_id: {type: Number, nullable: false},
+    time: Number,
+  },{index: 'day_id'});
+  console.log('OK');
+})
 
 function createWindow() {
   /**
@@ -53,9 +82,9 @@ function createWindow() {
 }
 
 global.config = new Config();
-global.userPath = app.getPath('userData');
 
-app.on('ready', () => {
+app.on('ready', async () => {
+  await initDB()
   createWindow()
 })
 
@@ -69,6 +98,7 @@ promiseIpc.on('changeKioskMode', async (state)=>{
   global.mainWindow.webContents.reload();
   global.mainWindow.setKiosk(global.kiosk_mode);
 });
+
 promiseIpc.on('getMonths', async (e) => {
   let url = path.join(app.getPath('userData'), 'data/');
   let months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];

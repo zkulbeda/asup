@@ -37,8 +37,8 @@ const actions = {
   async init({dispatch, commit}) {
     commit('setLoadingState', true);
     console.log('init student db');
-    db = await TheStudent.getDB('students.json');
-    await db.loadDatabase();
+    //db = await TheStudent.getDB('students.json');
+    //await db.loadDatabase();
     await dispatch('refreshStudents');
     commit('init');
     commit('setLoadingState', true);
@@ -85,7 +85,9 @@ const actions = {
   },
   async reidentification({dispatch},selected) {
     for(let studentID of selected){
-      await (await TheStudent.loadFromCode(db,studentID)).reidentification();
+        console.log('start', studentID)
+      await (await TheStudent.loadFromID(db,studentID)).reidentification();
+      console.log('end')
     }
     await dispatch('refreshStudents');
   },
