@@ -207,9 +207,9 @@
         });
       },
       async detect(d){
-        let r = this.$store.dispatch('Students/find', d);
-        if(r===false) return false;
-        if(this.selected.indexOf(d)===-1) this.selected.push(d);
+        let r = await this.$store.dispatch('Students/find', d);
+        if(r===undefined) return false;
+        if(this.selected.indexOf(r.studentID)===-1) this.selected.push(r.studentID);
         this.viewSelected = true;
       },
       openScanModal(){

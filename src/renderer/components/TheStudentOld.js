@@ -31,7 +31,7 @@ export default class TheStudent{
   isValid(){
     return this.constructor.isValidFromObject(this.toJSON());
   }
-  static async generateID(db, param = 'id', size = 10){
+  static async generateID(param = 'id', size = 10){
     let id = null;
     do{
       id = genID('0123456789',size);
@@ -53,8 +53,8 @@ export default class TheStudent{
     await update(this.db, {_id: this._id}, this.toJSON());
   }
   static async new(db, {studentID = null, code = null, name, group, pays}){
-    if(!studentID) studentID = await this.generateID(db, 'studentID');
-    if(!code) code = await this.generateID(db, 'code');
+    if(!studentID) studentID = await this.generateID('studentID');
+    if(!code) code = await this.generateID('code');
     let validationResult = this.isValidFromObject({name,group});
     if(validationResult!==true) throw validationResult;
     let inst = await db.insert({studentID, code, name, group, pays});
@@ -62,7 +62,7 @@ export default class TheStudent{
   }
   static async newOrEdit(db, st){
     let inst = null;
-    if(st.studentID) inst = await this.loadFromID(db,st.studentID, false);
+    if(st.studentID) inst = await this.loadFromID(st.studentID, false);
     if(!inst) return await this.new(db,st);
     else {
       inst.name = st.name?st.name:inst.name;
@@ -73,7 +73,7 @@ export default class TheStudent{
     }
     return true;
   }
-  static async loadFromID(db,studentID, throws = true){
+  static async loadFromID(studentID, throws = true){
     let rec = await db.findOne({studentID});
     if(rec){
       return new this(rec,db);
@@ -123,7 +123,7 @@ export default class TheStudent{
     return {number: r[1], letter: r[2]};
   }
   async reidentification(){
-    this.code = await this.constructor.generateID(db, 'code');
+    this.code = await this.constructor.generateID( 'code');
     await this.save();
     return this.code;
   }

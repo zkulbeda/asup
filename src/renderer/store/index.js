@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import createLogger from 'vuex/dist/logger'
 
 import { createPersistedState, createSharedMutations } from 'vuex-electron'
 
@@ -12,6 +13,9 @@ export default new Vuex.Store({
   plugins: [
     //createPersistedState(),
     //createSharedMutations()
+    createLogger({
+      collapsed: true
+    })
   ],
   strict: process.env.NODE_ENV !== 'production'
 })

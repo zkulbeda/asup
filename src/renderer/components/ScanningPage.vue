@@ -37,7 +37,7 @@
             <div>
           <b-list-group  class="ScanningPageList">
             <b-list-group-item v-for="(qr,i) in scannedList" href="#" v-scrollInto="i===selected" :active="i===selected" :key="i" @click="viewCard(i)">
-              {{$store.state.Students.students[qr.studentID].name}}
+              {{$store.state.Students.students[qr.student_id].name}}
 <!--              <span>{{qr.createdAt | formatTime}}</span>-->
             </b-list-group-item>
           </b-list-group>
@@ -79,6 +79,7 @@
   import Camera from './Camera';
   import moment from 'moment'
   let {app, dialog} = require('electron').remote;
+  import {soundSuccess, soundError} from '@/components/sounds';
 
   export default {
     name: 'landing-page',
@@ -119,7 +120,7 @@
       },
       currentCard(){
         if(this.selected!==null)
-          return {st: this.$store.state.Students.students[this.scannedList[this.selected].studentID], rd: this.scannedList[this.selected]};
+          return {st: this.$store.state.Students.students[this.scannedList[this.selected].student_id], rd: this.scannedList[this.selected]};
         else return null;
       }
     },
@@ -145,7 +146,8 @@
           console.log(all);
           //let img = imagedata_to_image(all.imageData);
           // let img = await this.$store.dispatch('ThisDay/createImageUrl', {rd:{id: all.content, }, imagedata: all.imageData})
-          let {st, rd} = await this.$store.dispatch("Students/record", {id: all.content, img: all.imageData});
+            soundSuccess.play();
+          let {st, rd} = await this.$store.dispatch("Students/record", {id: all.content,img: all.imageData });
           console.log(st);
           console.log(rd);
           this.selected = 0;
@@ -153,12 +155,13 @@
           // ...
         } catch (error) {
           console.dir(error);
-          if (error.message === "Ученик уже записан") {
-            let f = this.scannedList.findIndex((e)=>error.data.record._id===e._id);
+          if (error.code === 4) {
+            let f = this.scannedList.findIndex((e)=>error.data.record.id===e.id);
             this.selected = f!==-1?f:null;
           }else{
             this.selected = null;
           }
+          soundError.play(0.1);
           this.error = error.message;
         }finally {
           console.groupEnd();

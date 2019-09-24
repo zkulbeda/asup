@@ -177,7 +177,7 @@
           return this.selected;
         }
         throw null;
-      }).then((m)=>{return promiseIpc.send('getMonthData',{month: m+1})})
+      }).then((m)=>{console.log(m); return promiseIpc.send('getMonthData',{month: m+1})})
         .then((d)=>{console.log(d);this.monthData = d;})
         .catch((e)=>{if(e!==null)throw e;}).then(()=>{this.loading = false;}));
       //ipcRenderer.send('getMonths');

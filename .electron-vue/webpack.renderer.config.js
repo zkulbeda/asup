@@ -6,7 +6,7 @@ const path = require('path')
 const { dependencies } = require('../package.json')
 const webpack = require('webpack')
 
-const BabiliWebpackPlugin = require('babili-webpack-plugin')
+//const BabiliWebpackPlugin = require('babili-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
@@ -48,9 +48,15 @@ let rendererConfig = {
         use: 'vue-html-loader'
       },
       {
-        test: /\.js$/,
-        use: 'babel-loader',
-        exclude: /node_modules/
+        test: /\.m?js$/,
+        exclude: /(node_modules|bower_components)/,
+        use: {
+          loader: 'babel-loader',
+          query: {
+            presets: ['@babel/env'],
+            plugins: [['@babel/plugin-proposal-decorators', {decoratorsBeforeExport: true}]]
+          },
+        },
       },
       {
         test: /\.node$/,

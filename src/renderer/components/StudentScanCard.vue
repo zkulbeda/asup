@@ -4,16 +4,16 @@
             <h2>{{data.st.name}}</h2>
             <div class="StudentInfoPrice">Питается <span :class="[data.st.pays?'nonfree':'free']">{{data.st.pays?'платно':'бесплатно'}}</span></div>
             <div class="StudentInfoClass">Учащийся {{data.st.group}} класса</div>
-            <div class="StudentInfoTime">Записан в {{data.rd.createdAt | formatTime}}
-                <span class="StudentInfoTimeFromNow">{{data.rd.createdAt | formatTimeFromNow}}</span>
+            <div class="StudentInfoTime">Записан в {{data.rd.time | formatTime}}
+                <span class="StudentInfoTimeFromNow">{{data.rd.time | formatTimeFromNow}}</span>
             </div>
-            <div v-if="error" class="StudentInfoError">{{error}}</div>
 <!--            <img class="StudentInfoCardImg" :src="student.img" :alt="student.name+' '+student.group">-->
         </template>
         <div v-else>
             <h2>Ожидание сканирования...</h2>
             <p class="StudentInfoTime">Поместите карту питания в поле камеры</p>
         </div>
+        <div v-if="error" class="StudentInfoError">{{error}}</div>
     </div>
 </template>
 
@@ -35,10 +35,10 @@
         },
         filters:{
             formatTime(time){
-                return DateTime.fromJSDate(time).toLocaleString(DateTime.TIME_24_WITH_SECONDS);
+                return DateTime.fromSeconds(time).toLocaleString(DateTime.TIME_24_WITH_SECONDS);
             },
             formatTimeFromNow(time){
-                return moment(time).locale('ru').fromNow();
+                return moment.unix(time).locale('ru').fromNow();
             }
         }
     }

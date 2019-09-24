@@ -36,15 +36,7 @@
   import Pizzicato from 'pizzicato';
   import promiseIpc from 'electron-promise-ipc';
   let {app, dialog,getGlobal} = require('electron').remote;
-  let soundSuccess = new Pizzicato.Sound({
-    source: 'file',
-    options: { path: require('@/assets/beep.wav') }
-  });
-  console.log(soundSuccess);
-  let soundError = new Pizzicato.Sound({
-    source: 'file',
-    options: { path: require('@/assets/failure.wav') }
-  });
+  import {soundSuccess, soundError} from '@/components/sounds';
   export default {
     name: "KioskApp",
     components: {Camera},
@@ -98,6 +90,7 @@
           //let img = imagedata_to_image(all.imageData);
           // let img = await this.$store.dispatch('ThisDay/createImageUrl', {rd:{id: all.content, }, imagedata: all.imageData})
           console.time('scanned');
+          soundSuccess.play();
           let {st, rd} = await this.$store.dispatch("Students/record", {id: all.content, img: all.imageData});
           console.log(st);
           this.clearAll();

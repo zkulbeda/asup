@@ -4,9 +4,6 @@ faker.locale = 'ru';
 import TheStudent from "@/components/TheStudent";
 import {RuntimeError} from "@/components/utils";
 
-let db = null;
-console.log(db);
-
 const state = {
   students: null,
   initialized: false,
@@ -45,7 +42,7 @@ const actions = {
     //return db;
   },
   async refreshStudents({commit}) {
-    let res = await TheStudent.loadAll(db);
+    let res = await TheStudent.loadAll();
     console.log(res);
     commit('setStudents', res);
     return res;
@@ -61,12 +58,12 @@ const actions = {
     await dispatch('refreshStudents');
   },
   async insertStudent({commit,dispatch}, pl) {
-    let newStudent = await TheStudent.new(db,pl);
+    let newStudent = await TheStudent.new(pl);
     commit('addStudent', newStudent);
     return newStudent;
   },
   async editStudent({commit,dispatch}, {studentID,name,pays,group}) {
-    let student = await TheStudent.loadFromID(db,studentID);
+    let student = await TheStudent.loadFromID(studentID);
     student.name = name;
     student.pays = pays;
     student.group = group;
@@ -75,10 +72,10 @@ const actions = {
     return student;
   },
   async find({}, id) {
-    return await TheStudent.loadFromCode(db,id,false);
+    return await TheStudent.loadFromCode(id,false);
   },
   async record({dispatch, commit}, {id}) {
-    let st = await TheStudent.loadFromCode(db,id,false);
+    let st = await TheStudent.loadFromCode(id,false);
     if (!st) throw new RuntimeError(1);
     let rd = await dispatch('ThisDay/addStudent', {st, id}, {root: true});
     return {st, rd};
@@ -86,13 +83,13 @@ const actions = {
   async reidentification({dispatch},selected) {
     for(let studentID of selected){
         console.log('start', studentID)
-      await (await TheStudent.loadFromID(db,studentID)).reidentification();
+      await (await TheStudent.loadFromID(studentID)).reidentification();
       console.log('end')
     }
     await dispatch('refreshStudents');
   },
   async remove({dispatch},selected) {
-    await TheStudent.removeMany(db,selected);
+    await TheStudent.removeMany(selected);
     await dispatch('refreshStudents');
   }
 }

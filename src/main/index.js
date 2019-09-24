@@ -10,6 +10,8 @@ import uniqWith from 'lodash/uniqWith';
 import findIndex from 'lodash/findIndex'
 import tempy from 'tempy'
 import {getGlobal} from "@/components/utils";
+import {DateTime} from "luxon";
+
 
 global.userPath = app.getPath('userData');
 /**
@@ -31,7 +33,13 @@ let db = connect(path.join(global.userPath, 'db.db'), {
   client: 'sql.js'
 })
 global.db = db;
-let initDB = (async ()=>{
+
+/**
+ *
+ * @param {Trilogy} db
+ * @returns {Promise<void>}
+ */
+async function initDB(db){
   global.students = await db.model('students', {
     id: 'increments',
     code: {type: String, nullable: false},
@@ -47,12 +55,16 @@ let initDB = (async ()=>{
   },{index: 'day'});
   global.records = await db.model('records', {
     id: 'increments',
-    student_id: {type: Number, nullable: false},
-    day_id: {type: Number, nullable: false},
+    student_id: {type: Number, nullable: false, foreign: "id", inTable: "students"},
+    day_id: {type: Number, nullable: false, foreign: "id", inTable: "days"},
     time: Number,
   },{index: 'day_id'});
+  global.db.onQuery(query => console.log(query))
+  global.students.onQuery(query => console.log(query))
+  global.days.onQuery(query => console.log(query))
+  global.records.onQuery(query => console.log(query))
   console.log('OK');
-})
+};
 
 function createWindow() {
   /**
@@ -84,7 +96,7 @@ function createWindow() {
 global.config = new Config();
 
 app.on('ready', async () => {
-  await initDB()
+  await initDB(db)
   createWindow()
 })
 
@@ -102,6 +114,7 @@ promiseIpc.on('changeKioskMode', async (state)=>{
 promiseIpc.on('getMonths', async (e) => {
   let url = path.join(app.getPath('userData'), 'data/');
   let months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  return [true,true,true,true,true,true,true,true,true,true,true,true,];
   let res = await Promise.all(months.map(async (e) => {
     if(fs.existsSync(path.join(url, e + '/'))) {
       let count = 0;
@@ -126,36 +139,22 @@ promiseIpc.on('getMonths', async (e) => {
 
 promiseIpc.on('getMonthData', async({month})=>{
   let data = {};
-  for (let i = 1; i < 32; i++) {
-    let p = path.join(app.getPath('userData'), 'data/' + month + '/' + i + '.json');
-    if (!fs.existsSync(p)) continue;
-    let vdb = nedb({
-      filename: p,
-      timestampData: true,
-      autoload: true
-    });
-    let conf = await vdb.findOne({type: 'config'});
-    console.log(conf);
-    if(conf === null || conf.started==false) continue;
-    else{
-      let students = await vdb.count({type: 'record'});
-      if(conf.ended){
-        let price = await vdb.findOne({type: "price"});
-        data[i] = {
-          type: 'ended',
-          students,
-          price,
-          day: i
-        };
-      }
-      else{
-        data[i] = {
-          type: 'started',
-          students,
-          day: i
-        };
-      }
-    }
+  console.log('getting month data', month);
+  let begin = Math.trunc(DateTime.local().set({month}).startOf('month').toSeconds()/(60*60*24));
+  let end = Math.trunc(DateTime.local().set({month}).endOf('month').toSeconds()/(60*60*24));
+  let days = await db.raw(db.knex('days').select('*').whereBetween('day',[begin, end]),true);
+  console.log(days);
+  for (let d of days) {
+    let day = new TheDay(d);
+    let i = DateTime.fromSeconds(day.daystamp*60*60*24).day;
+    let students = (await day.getList({count: true}));
+    console.log(students, i)
+    data[i] = {
+      type: day.isEnded()?'ended':'started',
+      students: students['count(`id`)'],
+      price: day.getPrice(),
+      day: i
+    };
   }
   return data;
 });
@@ -280,41 +279,37 @@ import TheStudent from "@/components/TheStudent";
 promiseIpc.on('generateExcel', async (e) => {
   let mth = e.month;
   let data = [];
-  for (let i = 1; i < 32; i++) {
-    let Day = new TheDay(mth,i);
-    if (!fs.existsSync(Day.filename)) continue;
-    await Day.load();
-    if(Day.config.started==false || Day.config.ended==false) continue;
-    else{
-      let students = await Day.getRecords();
-      let price = await Day.getPrice();
+  let begin = Math.trunc(DateTime.local().set({month}).startOf('month').toSeconds()/(60*60*24));
+  let end = Math.trunc(DateTime.local().set({month}).endOf('month').toSeconds()/(60*60*24));
+  let days = await db.raw(db.knex('days').whereBetween('day',[begin, end]),true);
+  for (let d of days) {
+    let day = new TheDay(d);
+    if (day.isEnded()){
       data.push({
-        students,
-        price,
-        day: i
+        students: await day.getRecords(),
+        price: day.getPrice(),
+        day: DateTime.fromSeconds(day.daystamp * 60 * 60 * 24).day
       });
     }
-    // return data;
   }
-  let db = await TheStudent.getDB('students.json');
   await db.loadDatabase();
   let wb = new xl.Workbook({});
   let styleCentered = {alignment: {horizontal: 'center', vertical: 'center'}};
   let stCell = wb.createStyle(merge({}, styleCentered));
-  let students = await TheStudent.loadAll(db);
+  let students = await TheStudent.loadAll();
   let classes = uniqWith(students, (a, b) => a.group == b.group).map((e) => e.group).sort();
   let mntn = monthNames[mth - 1];
   generateWS(wb, 'Общая', "Общий отчёт питания по всей школе за " + mntn, students, data, stCell);
-  students = await TheStudent.loadAll(db, {pays: true});
+  students = await TheStudent.loadAll({pays: true});
   generateWS(wb, 'Общая П', "Общий отчёт платного питания по всей школе за " + mntn, students, data, stCell);
-  students = await TheStudent.loadAll(db, {pays: false});
+  students = await TheStudent.loadAll( {pays: false});
   generateWS(wb, 'Общая Б', "Общий отчёт бесплатного питания по всей школе за " + mntn, students, data, stCell);
   for (let i = 0; i < classes.length; i++) {
-    students = await TheStudent.loadAll(db, {pays: true, group: classes[i]});
+    students = await TheStudent.loadAll( {pays: true, group: classes[i]});
     if (students.length > 0) {
       generateWS(wb, classes[i] + ' П', "Отчёт платного питания " + classes[i] + " класса за " + mntn, students, data, stCell);
     }
-    students = await TheStudent.loadAll(db, {pays: false, group: classes[i]});
+    students = await TheStudent.loadAll({pays: false, group: classes[i]});
     if (students.length > 0) {
       generateWS(wb, classes[i] + ' Б', "Отчёт бесплатного питания " + classes[i] + " класса за " + mntn, students, data, stCell);
     }
@@ -333,6 +328,31 @@ promiseIpc.on('generateExcel', async (e) => {
 
 import Zip from 'adm-zip';
 import {RuntimeError} from "@/components/utils";
+
+promiseIpc.on('importDB', async(e)=>{
+  let url = path.join(app.getPath('userData'), 'data/');
+  let file = await dialog.showOpenDialog(mainWindow, {
+    title: 'Открытие базы данных',
+    filters: [{name: 'База данных', extensions: ['db', 'sqlite']}]
+  });
+  let newdb = connect(file, {
+    client: 'sql.js'
+  })
+  await initDB(newdb);
+  let students = await newdb.getModel('students').find();
+  for(let student of students){
+    await TheStudent.newOrEdit(student);
+  }
+  let days = await newdb.getModel('days').find();
+  for(let day of days){
+    await TheDay.startDayOrEdit(day)
+  }
+  let records = await newdb.getModel('records').find();
+  for(let record of days){
+
+  }
+});
+
 promiseIpc.on('exportZip', async(e)=>{
   let url = path.join(app.getPath('userData'), 'data/');
   let arch = new Zip();
@@ -377,12 +397,11 @@ promiseIpc.on('importZip', async(e)=>{
     autoload: true
   });
   let st = await db.find({});
-  let studentDB = TheStudent.getDB('students.json');
   let d = null, countSt = 0;
   try {
     for(let i in st){
       d = st[i];
-      await TheStudent.newOrEdit(studentDB,st[i]);
+      await TheStudent.newOrEdit(st[i]);
       countSt++;
     }
   }catch (e) {
@@ -411,11 +430,10 @@ promiseIpc.on('importZip', async(e)=>{
         });
         let conf = await vdb.findOne({type: 'config'});
         if (conf === null || conf.started == false) continue;
-        let day = new TheDay(e,i);
-        await day.load();
+        let day = await TheDay.loadFromDate(e,i);
         let rds = await vdb.find({type: 'record'});
         for(let rdi in rds){
-          let st = TheStudent.loadFromID(studentDB,rds[rdi].studentID,false);
+          let st = TheStudent.loadFromID(rds[rdi].studentID,false);
           if(!st) dialog.showMessageBox(getGlobal('mainWindow'),{
             message: 'Ученик не был вставлен.',
             detail: 'Месяц:'+e+', день:'+i+' id:'+rds[rdi].studentID

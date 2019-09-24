@@ -1,3 +1,27 @@
+import {DateTime} from "luxon";
+
+
+export function getSecondsStamp(luxon_datetime){
+  return Math.trunc(luxon_datetime.toSeconds());
+}
+/**
+ *
+ * @param {number} month
+ * @param {number} day
+ * @returns {number} daystamp
+ */
+export function getDayStamp(month, day){
+  return Math.trunc(DateTime.local().set({month, day}).startOf('day').toSeconds()/(60*60*24));
+}
+
+/***
+ * @decelerated
+ * @param db
+ * @param need
+ * @param replaced
+ * @param many
+ * @returns {Promise<*>}
+ */
 export async function update(db, need, replaced, many = false) {
   let i = await db.findOne(need);
   if (i === null) throw Error('NOT FOUND: ' + JSON.stringify(need));

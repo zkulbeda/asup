@@ -23,7 +23,6 @@
       async onDetect(p){
           let r = await p;
           let f = await this.detect(r.content);
-          console.log(r);
       }
     }
   }

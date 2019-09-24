@@ -58,27 +58,33 @@ const mutations = {
 
 const actions = {
   async init({dispatch, commit}) {
+      console.log('init ThisDay');
     commit('setLoadingState', true);
     let m = DateTime.local().month, d = DateTime.local().day;
-    Day = new TheDay(m,d);
-    await Day.load();
-    commit('setStartState', [Day.config.started, Day.config.ended, m,d]);
-    commit('setList', await Day.getRecords());
-    commit('setLoadingState', false);
+    Day = await TheDay.loadFromDate(m,d);
+    if(Day){
+        console.log('День',Day.config);
+        commit('setStartState', [Day.config.started, Day.config.ended, m,d]);
+        commit('setList', await Day.getRecords());
+        commit('setLoadingState', false);
+    }else commit('setStartState', [false, false, m,d]);
     commit('init');
   },
   async startSession({commit, state}) {
-    await Day.startDay();
+    Day = TheDay.startNewDay(state.month, this.state.day)
     commit('setStartState', [true, false]);
     return true;
   },
   async closeSession({commit, state, dispatch}, pl) {
     console.log(pl);
-    await Day.endDay(pl.free, pl.notFree);
-    return false;
+    let res = Day.endDay(pl.free, pl.notFree);
+    commit('setStartState', [true, false]);
+    return res;
+
   },
   async addStudent({commit, state, dispatch}, {st}) {
     let rd = await Day.recordStudent(st);
+    console.log(rd)
     commit('pushRecord', rd);
     return rd;
   },
