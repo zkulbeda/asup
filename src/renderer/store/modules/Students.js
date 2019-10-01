@@ -83,7 +83,9 @@ const actions = {
   async reidentification({dispatch},selected) {
     for(let studentID of selected){
         console.log('start', studentID)
-      await (await TheStudent.loadFromID(studentID)).reidentification();
+        let user = await TheStudent.loadFromID(studentID);
+        console.log(user);
+      await user.reidentification();
       console.log('end')
     }
     await dispatch('refreshStudents');

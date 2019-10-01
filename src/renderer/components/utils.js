@@ -2,7 +2,7 @@ import {DateTime} from "luxon";
 
 
 export function getSecondsStamp(luxon_datetime){
-  return Math.trunc(luxon_datetime.toSeconds());
+  return Math.round(luxon_datetime.toSeconds());
 }
 /**
  *
@@ -11,7 +11,7 @@ export function getSecondsStamp(luxon_datetime){
  * @returns {number} daystamp
  */
 export function getDayStamp(month, day){
-  return Math.trunc(DateTime.local().set({month, day}).startOf('day').toSeconds()/(60*60*24));
+  return Math.round(DateTime.local().set({month, day}).startOf('day').toSeconds()/(60*60*24));
 }
 
 /***

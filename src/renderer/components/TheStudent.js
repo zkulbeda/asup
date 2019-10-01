@@ -1,10 +1,10 @@
 import trim from 'condense-whitespace';
 import genID from "nanoid/generate";
-import {update} from '@/components/utils';
+import {RuntimeError, update} from '@/components/utils';
 import nedb from "nedb-promise";
 import path from "path";
 import {getGlobal} from "@/components/utils";
-import db from '@/components/db';
+import database from '@/components/db';
 
 export class ValidationError extends Error{
   constructor(message, param, data){
@@ -15,12 +15,23 @@ export class ValidationError extends Error{
 }
 
 export default class TheStudent{
-  constructor({studentID = null, code, name, group, pays, id = null}){
+  /**
+   *
+   * @param {Number} studentID
+   * @param {String} code
+   * @param {String} name
+   * @param {String} group
+   * @param {Boolean} pays
+   * @param {Number} id
+   * @param {Function<Trilogy>} db
+   */
+  constructor({studentID = null, code, name, group, pays, id = null}, db = database){
     this.studentID = studentID || id;
     this.code = code;
     this.name = trim(name);
     this.group = group;
     this.pays = Boolean(pays).valueOf();
+    this._db = database;
   }
   static isValidFromObject({group}){
     if(!(/^(1[0-1]|[5-9])([А-Я])?$/).test(group)){
@@ -31,10 +42,12 @@ export default class TheStudent{
   isValid(){
     return this.constructor.isValidFromObject(this.toJSON());
   }
-  static async generateID(param = 'id', size = 10){
+  static async generateID(param = 'id',db = database, size = 10){
     let id = null;
     do{
+        console.log('generationID')
       id = genID('0123456789',size);
+      console.log(id)
     }while((await db().getModel('students').findOne({[param]: id}))!==undefined);
     return id;
   }
@@ -50,32 +63,32 @@ export default class TheStudent{
   }
   async save(){
     this.mustDBInstance();
-    console.log(this)
-    await db().getModel('students').update({id: this.studentID},this.toJSONSQL());
+    await this._db().getModel('students').update({id: this.studentID},this.toJSONSQL());
   }
-  static async new( {studentID = null, code = null, name, group, pays}){
+  static async new({studentID = null, code = null, name, group, pays}, db = database){
     //if(!studentID) studentID = await this.generateID(db, 'id');
-    if(!code) code = await this.generateID('code');
+    if(!code) code = await this.generateID('code', db);
     let validationResult = this.isValidFromObject({name,group});
     if(validationResult!==true) throw validationResult;
-    let inst = await db().getModel('students').create({code, name, group, pays});
+    let inst = await db().getModel('students').create({id: studentID, code, name, group, pays});
     console.log(inst)
-    return new this(inst);
+    return new this(inst,db);
   }
-  static async newOrEdit(st){
+  static async newOrEdit(st, db = database){
     let inst = null;
-    if(st.studentID) inst = await this.loadFromID(st.studentID, false);
-    if(!inst) return await this.new(st);
+    if(st.studentID) inst = await this.loadFromID(st.studentID, false, db);
+    if(st.code) inst = await this.loadFromCode(st.code, false, db);
+    if(!inst) return await this.new(st, db);
     else {
       inst.name = st.name?st.name:inst.name;
       inst.group = st.group?st.group:inst.group;
       inst.pays = st.pays!==undefined?st.pays:inst.pays;
       await inst.save();
-      return false;
+      return inst;
     }
     return true;
   }
-  static async loadFromID(studentID, throws = true){
+  static async loadFromID(studentID, throws = true, db = database){
     let rec = await db().getModel("students").findOne({id: studentID}, {limit: 1});
     if(rec){
       return new this(rec);
@@ -84,43 +97,38 @@ export default class TheStudent{
       else return false;
     }
   }
-  static async loadFromCode(code, throws = true){
-    console.log('start')
-    console.log(db,code);
+  static async loadFromCode(code, throws = true, db = database){
     let rec = await db().getModel("students").findOne({code: code},{limit: 1});
     console.log(rec)
     if(rec){
-      return new this(rec);
+      return new this(rec, db);
     }else{
-      if(throws) throw new Error('Ученик не найден');
+      if(throws) throw new RuntimeError(1, {code});
       else return false;
     }
   }
-  static async loadAll( request = {}){
-      console.log(db())
+  static async loadAll( request = {}, db = database){
     let recs = await db().getModel("students").find(request);
     let r = [];
     for(let i in recs){
-      r.push(new this(recs[i]));
+      r.push(new this(recs[i], db));
     }
     return r;
   }
   static async getDB(filename){
     console.warn('Старый вызов getDB');
     return null;
-      // let db = nedb({
-      //   filename: path.join(getGlobal('userPath'), 'students.json'),
-      //   timestampData: true
-      // });
-      // db.ensureIndex({ fieldName: "studentID", unique: true });
-      // db.ensureIndex({ fieldName: "code", unique: true });
-      // return db;
   }
   async remove(){
-    return await db().getModel("students").remove({id: this.studentID});
+    return await this._db().getModel("students").remove({id: this.studentID});
   }
-  static async removeMany(els){
-    return await db().raw(db().knex('students').where('id', els).delete(),true);
+  static async removeMany(els,db = database){
+    for(let el of els){
+      await db().getModel('students').remove({id: el})
+    }
+    //   console.log(els, db().knex('students').whereIn('id', els).delete().toSQL());
+    //   db().onQuery(query => console.log(query))
+    // return await db().raw(db().knex('students').whereIn('id', els).delete());
   }
   explodeGroup(){
     let rex = /^(1[0-1]|[5-9])([А-Я])?$/;
@@ -128,8 +136,11 @@ export default class TheStudent{
     return {number: r[1], letter: r[2]};
   }
   async reidentification(){
-    this.code = await this.constructor.generateID( 'code');
-    await this.save();
+      console.log('ok')
+    this.code = await this.constructor.generateID( 'code', this._db);
+    console.log(this.code)
+    let res = await this.save();
+    console.log(res)
     return this.code;
   }
 

@@ -1,10 +1,10 @@
 
 import Pizzicato from 'pizzicato';
-let soundSuccess = Pizzicato.Sound({
+let soundSuccess = new Pizzicato.Sound({
     source: 'file',
     options: { path: require('@/assets/beep.wav') }
 });
-let soundError = Pizzicato.Sound({
+let soundError = new Pizzicato.Sound({
     source: 'file',
     options: { path: require('@/assets/failure.wav') }
 });

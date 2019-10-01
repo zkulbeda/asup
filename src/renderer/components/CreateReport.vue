@@ -141,7 +141,8 @@
       },
       async editPriceDay(d){
         console.log(d);
-        let day = new TheDay(d.dayToEdit.month,d.dayToEdit.day); await day.load();
+        let day = await TheDay.loadFromDate(d.dayToEdit.month,d.dayToEdit.day);
+        console.log(day);
         console.log(await day.editPrice(d.free, d.notFree));
         this.monthData[d.dayToEdit.day].price = {free: d.free, notFree: d.notFree};
       },
@@ -151,18 +152,19 @@
         this.$modal.show('closeDayReport',{dayToEdit:date, callback: this.closePriceDay,callbackDelete: this.deleteDay, count: day.students})
       },
       async closePriceDay(d){
-        let day = new TheDay(d.dayToEdit.month,d.dayToEdit.day); await day.load();
+        let day = await TheDay.loadFromDate(d.dayToEdit.month,d.dayToEdit.day);
         await day.endDay(d.free, d.notFree);
         this.monthData[d.dayToEdit.day].price = {free: d.free, notFree: d.notFree};
         this.monthData[d.dayToEdit.day].type = 'ended';
       },
       async deleteDay(d){
-        let day = new TheDay(d.dayToEdit.month,d.dayToEdit.day); await day.load();
+        let day = await TheDay.loadFromDate(d.dayToEdit.month,d.dayToEdit.day)
         await day.removeDay();
         this.$delete(this.monthData,d.dayToEdit.day);
       },
     },
     mounted() {
+        console.log(DateTime);
       console.log(promiseIpc);
       this.$wait(promiseIpc.send('getMonths').then((d)=>{
         console.log(d);
