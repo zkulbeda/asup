@@ -40,8 +40,8 @@ export default class TheDay {
     }
 
     async save(){
-        console.log(this)
-        return this._db().getModel('days').update({id: this.id}, {free: this.free, not_free: this.not_free});
+        console.log({free: this.free, not_free: this.not_free});
+        return await this._db().getModel('days').update({id: this.id}, {free: this.free, not_free: this.not_free});
     }
 
     /**
@@ -53,7 +53,6 @@ export default class TheDay {
      */
     static async loadFromDate(month, day, db = database) {
         let daystamp = getDayStamp(month, day);
-        console.log(daystamp)
         return this.loadFromDayStamp(daystamp, db)
     }
 
@@ -91,7 +90,7 @@ export default class TheDay {
         if (!rec) rec = new this(await this._createFromDayStamp(day, db), db);
         rec.free = free;
         rec.not_free = not_free;
-        //rec.save();
+        await rec.save();
         return rec;
     }
 

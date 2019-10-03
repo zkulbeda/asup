@@ -28,19 +28,19 @@
         :sort-by.sync="sortBy"
         :sort-desc.sync="sortDesc"
     >
-      <template slot="empty" slot-scope="scope">
+      <template v-slot:table-empty="scope">
         <p class="text-center">Ученики не найдены. Проверьте ваш запрос.</p>
       </template>
-      <template slot="checkbox" slot-scope="data" class="table-checkbox">
+      <template v-slot:cell(checkbox)="data" class="table-checkbox">
         <b-form-checkbox v-model="selected" :value="data.item.studentID" :key="data.item.studentID"></b-form-checkbox>
       </template>
-      <template slot="pays" slot-scope="data" class="table-checkbox">
+      <template v-slot:cell(pays)="data" class="table-checkbox">
         <b-badge :variant="data.item.pays?'danger':'success'">{{data.item.pays?'платно':'беспл.'}}</b-badge>
       </template>
-      <div slot="table-busy" class="text-center text-primary my-2 d-flex justify-content-center align-items-center">
+      <template v-slot:table-busy="scope" class="text-center text-primary my-2 d-flex justify-content-center align-items-center">
         <b-spinner small  class="align-middle mr-2"></b-spinner>
         <strong>Ожидание...</strong>
-      </div>
+      </template>
     </b-table>
     <div class="d-flex  justify-content-between align-items-center">
       <div>
@@ -124,22 +124,26 @@
         perPage: 10,
         sortBy: 'name',
         sortDesc: false,
-        fields: {
-          checkbox:{
+        fields: [
+          {
+            key:'checkbox',
             sortable: false,
             label: '',
             class: 'table-checkbox'
           },
-          name: {
+          {
+            key: 'name',
             label: 'Имя',
             sortable: true
           },
-          group: {
+          {
+            key: 'group',
             label: 'Класс',
             sortable: true,
             class: 'table-student-group'
           },
-          pays: {
+          {
+            key: 'pays',
             label: 'Пит.',
             sortable: true,
             class: 'table-student-status'
@@ -147,7 +151,7 @@
           // pays:{
           //   label: 'платник'
           // }
-        },
+        ],
         query: '',
         lazyQuery: '',
         viewSelected: false,
