@@ -115,6 +115,18 @@ export default class TheStudent{
     }
     return r;
   }
+  static async loadWithLimit(request = {}, {currentPage, perPage, sortBy, sortDesc}, db = database){
+    let recs = await db().getModel("students").find(request, {
+      limit: perPage,
+      skip: (currentPage-1)*perPage,
+      order: [sortBy, sortDesc?'desc':'asc']
+    });
+    let r = [];
+    for(let i in recs){
+      r.push(new this(recs[i], db));
+    }
+    return r;
+  }
   static async getDB(filename){
     console.warn('Старый вызов getDB');
     return null;

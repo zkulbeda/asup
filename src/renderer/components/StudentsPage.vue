@@ -1,4 +1,4 @@
-<template>
+<template xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
   <b-card ref="main">
     <h4 class="mb-4">Список учеников
       <router-link to="/create-student" class="btn btn-outline-primary btn-sm btn-with-icon" style="
@@ -16,19 +16,15 @@
     <b-table
         ref="table"
         :busy.sync="isBusy"
-        :items="founded"
+        :items="students_provider"
         :per-page="perPage"
         :current-page="currentPage"
-        :no-provider-paging="true"
-        :no-provider-sorting="true"
         :fields="fields"
         :class="{'table-select-mode': selectMode}"
         @row-clicked="rowClick"
         show-empty
-        :sort-by.sync="sortBy"
-        :sort-desc.sync="sortDesc"
     >
-      <template v-slot:table-empty="scope">
+      <template v-slot:empty="scope">
         <p class="text-center">Ученики не найдены. Проверьте ваш запрос.</p>
       </template>
       <template v-slot:cell(checkbox)="data" class="table-checkbox">
@@ -37,9 +33,11 @@
       <template v-slot:cell(pays)="data" class="table-checkbox">
         <b-badge :variant="data.item.pays?'danger':'success'">{{data.item.pays?'платно':'беспл.'}}</b-badge>
       </template>
-      <template v-slot:table-busy="scope" class="text-center text-primary my-2 d-flex justify-content-center align-items-center">
-        <b-spinner small  class="align-middle mr-2"></b-spinner>
-        <strong>Ожидание...</strong>
+      <template v-slot:table-busy="scope">
+        <div class="text-center text-primary my-2 d-flex justify-content-center align-items-center">
+            <b-spinner small  class="align-middle mr-2"></b-spinner>
+            <strong>Ожидание...</strong>
+        </div>
       </template>
     </b-table>
     <div class="d-flex  justify-content-between align-items-center">
@@ -107,6 +105,7 @@
   import StudentDangerActionModel from './StudentDangerActionModel';
   import ScanningStudentCardModel from './ScanningStudentCardModel';
   import debounce from 'lodash/debounce';
+  import TheStudent from "./TheStudent";
   Vue.use(VueFuse);
   let addMontFont = (d,m,t)=>{
     d.addFileToVFS('mont'+t+'.ttf',m.split(',')[1]);
@@ -159,6 +158,11 @@
       }
     },
     computed: {
+        async students_provider(cxt){
+            let st = await TheStudent.loadWithLimit({}, cxt);
+            console.log(st);
+            return st;
+        },
       it() {
         console.log(this.$store.state.Students.students)
         let res = values(this.$store.state.Students.students);
