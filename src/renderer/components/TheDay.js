@@ -70,12 +70,17 @@ export default class TheDay {
 
 
     static async startNewDay(month, day, db = database) {
-        let exists = await this.loadFromDate(month, day, db);
+        return this.startNewDayFromDaystamp(getDayStamp(month, day),db)
+    }
+
+    static async startNewDayFromDaystamp(daystamp, db = database) {
+        let exists = await this.loadFromDayStamp(daystamp, db);
         if (exists !== false) {
             console.warn('День уже начат: ', exists);
             return exists;
         }
-        let d = this._createFromDayStamp(getDayStamp(month, day), db)
+        let d = await this._createFromDayStamp(daystamp, db);
+        console.log(d)
         return new this(d, db)
     }
 
@@ -158,7 +163,11 @@ export default class TheDay {
             q = q.where('student_id', 'in', sub_q);
         }
         console.log(q.toSQL());
-        return this._db().raw(q, true);
+        let res = await this._db().raw(q, true);
+        if(count == true){
+            return res[0]['count(`id`)']
+        }
+        return res;
     }
 
     async removeDay() {

@@ -11,7 +11,14 @@ import findIndex from 'lodash/findIndex'
 import tempy from 'tempy'
 import {getGlobal} from "@/components/utils";
 import {DateTime} from "luxon";
-
+import {RuntimeError} from "@/components/utils";
+import * as express from "express";
+import {check, query, body, validationResult} from "express-validator";
+import {connect} from 'trilogy'
+import nedb from "nedb-promise";
+import TheDay from "@/components/TheDay";
+import TheStudent from "@/components/TheStudent";
+import bodyParser from "body-parser";
 
 global.userPath = app.getPath('userData');
 /**
@@ -27,7 +34,6 @@ const winURL = process.env.NODE_ENV === 'development'
     ? `http://localhost:9080`
     : `file://${__dirname}/index.html`
 global.kiosk_mode = argv.kiosk;
-import {connect} from 'trilogy'
 
 let db = connect(path.join(global.userPath, 'db.db'), {
     client: 'sql.js'
@@ -97,9 +103,119 @@ function createWindow() {
 
 global.config = new Config();
 
+const server = express();
+
+server.use(bodyParser.urlencoded())
+
+server.use(async(req,res,next)=>{
+    try{
+        return next();
+    }catch (e) {
+        res.status(500).json({errors: [e.toString()], error: e});
+    }
+})
+
+const valid = validations => {
+    return async(req, res, next)=> {
+        await Promise.all(validations.map((v) => v.run(req)));
+        const e = validationResult(req);
+        if (e.isEmpty()) {
+            return next();
+        }
+        res.status(422).json({errors: e.array()});
+    }
+}
+
+const getDay = d => {
+    return async (req,res,next)=>{
+        return await valid([query('day_id').exists().isNumeric()])(req, res, async ()=>{
+            if(!validationResult(req).isEmpty()) return;
+            let day = await TheDay.loadFromID(req.query.day_id);
+            if(!day) {
+                console.log('OOOPS')
+                let e = new RuntimeError(3);
+                res.status(404).json({error: {code: e.code, message: e.message}})
+                return;
+            }
+            req.day = day;
+            return next()
+        });
+    };
+}
+
+server.post('/day',valid([query('daystamp').exists().isNumeric()]), async (req,res) =>{
+    let day = await TheDay.loadFromDayStamp(req.query.daystamp)
+    if(!day) day = await TheDay.startNewDayFromDaystamp(req.query.daystamp)
+    res.json({
+        status: day.config.ended?"ended":"opened",
+        id: day.id
+    })
+})
+
+server.get('/day', getDay(), async(req, res)=>{
+    let day = req.day;
+    res.json({
+        'day_id': day.id,
+        status: day.config.ended?"ended":"opened",
+        count_free: await day.getList({withWhoNotPays: true, count: true}),
+        count_not_free: await day.getList({withWhoPays: true, count: true}),
+        price_free: day.free,
+        price_not_free: day.not_free
+    });
+})
+
+
+server.delete('/day', getDay(), async(req, res)=>{
+    req.day.removeDay()
+    res.json({status: 'success'});
+})
+
+server.get('/records_list', getDay(), async (req, res)=>{
+    let day = req.day;
+    let records = await day.getList({});
+    console.log(records);
+    let n = [];
+    for(let r of records){
+        r.student_id=await TheStudent.loadFromID(r.student_id, false);
+        n.push(r);
+    }
+    res.json(n);
+})
+
+server.post('/save_price', [body('free').exists().isDecimal(),body('not_free').exists().isDecimal(), getDay()], async(req,res)=>{
+    let day = req.day;
+    await day.editPrice(req.body.free, req.body.not_free)
+    res.json({status: 'success'});
+})
+
+
+server.post('/record_student', [body('code').exists(), getDay()], async(req, res)=>{
+    try{
+        let day = req.day;
+        console.log(req.body);
+        let student = await TheStudent.loadFromCode(req.body.code, true);
+        await day.recordStudent(student);
+        res.json({name: student.name, group: student.group, pays: student.pays, id: student.code});
+    }catch (e) {
+        if(e instanceof RuntimeError){
+            res.status(400);
+            res.json({error: {code: e.code, message: e.message}});
+        }
+        else throw e;
+    }
+})
+
+
+server.use(async(e,req,res,next)=>{
+    return res.status(500).json({errors: [e.toString()], error: e})
+})
+
 app.on('ready', async () => {
     await initDB(db)
-    createWindow()
+    //createWindow()
+    let s = server.listen(9321, ()=>{
+        console.log(s.address())
+    })
 })
 
 app.on('window-all-closed', () => {
@@ -282,10 +398,6 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
     //return ws;
 };
 let monthNames = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь',];
-import nedb from "nedb-promise";
-import TheDay from "@/components/TheDay";
-import TheStudent from "@/components/TheStudent";
-
 promiseIpc.on('generateExcel', async (e) => {
     let mth = e.month;
     let month = e.month;
@@ -303,7 +415,6 @@ promiseIpc.on('generateExcel', async (e) => {
             });
         }
     }
-    await db.loadDatabase();
     let wb = new xl.Workbook({});
     let styleCentered = {alignment: {horizontal: 'center', vertical: 'center'}};
     let stCell = wb.createStyle(merge({}, styleCentered));
@@ -331,14 +442,14 @@ promiseIpc.on('generateExcel', async (e) => {
         defaultPath: 'Полный отчёт питания школы за ' + mntn,
         filters: [{name: 'Таблица Excel', extensions: ['xlsx']}]
     }, (file) => {
-        wb.writeToBuffer().then((buf) => {
-            fs.writeFileSync(file, buf);
-        })
+        if(file)
+            wb.writeToBuffer().then((buf) => {
+                fs.writeFileSync(file, buf);
+            })
     });
 });
 
 import Zip from 'adm-zip';
-import {RuntimeError} from "@/components/utils";
 promiseIpc.on('importDB', async (e) => {
     try {
         let file = await dialog.showOpenDialog(getGlobal('mainWindow'), {
