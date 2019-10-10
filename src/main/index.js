@@ -19,6 +19,8 @@ import nedb from "nedb-promise";
 import TheDay from "@/components/TheDay";
 import TheStudent from "@/components/TheStudent";
 import bodyParser from "body-parser";
+import authenticator from 'otplib/authenticator'
+import crypto from 'crypto'
 
 global.userPath = app.getPath('userData');
 /**
@@ -101,7 +103,13 @@ function createWindow() {
     })
 }
 
-global.config = new Config();
+let config = global.config = new Config();
+
+authenticator.options = {crypto};
+if(!config.has('totp-secret')){
+    config.set('totp-secret', authenticator.generateSecret(20)); //TODO: https://pypi.org/project/pyotp/
+    console.log('New Secret: ', config.get('totp-secret'));
+}
 
 const server = express();
 
