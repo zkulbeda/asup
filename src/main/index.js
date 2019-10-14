@@ -35,9 +35,9 @@ let mainWindow
 const winURL = process.env.NODE_ENV === 'development'
     ? `http://localhost:9080`
     : `file://${__dirname}/index.html`
-global.kiosk_mode = argv.kiosk;
-
-let db = connect(path.join(global.userPath, 'db.db'), {
+global.kiosk_mode= argv.kiosk;
+let db = null;
+db = connect(path.join(global.userPath, 'db.db'), {
     client: 'sql.js'
 })
 global.db = db;
@@ -220,7 +220,7 @@ server.use(async(e,req,res,next)=>{
 
 app.on('ready', async () => {
     await initDB(db)
-    //createWindow()
+    createWindow()
     let s = server.listen(9321, ()=>{
         console.log(s.address())
     })

@@ -81,6 +81,7 @@
 <script>
   import {remote} from 'electron'
   let {BrowserWindow, getGlobal, app, shell} = remote;
+  import find from 'lodash/find';
   import MontFont from '@/assets/fonts/Mont-Regular.ttf';
   import MontBoldFont from '@/assets/fonts/Mont-Bold.ttf';
   import MontLightFont from '@/assets/fonts/Mont-Light.ttf';
@@ -158,21 +159,16 @@
       }
     },
     computed: {
-        async students_provider(cxt){
-            let st = await TheStudent.loadWithLimit({}, cxt);
-            console.log(st);
-            return st;
-        },
-      it() {
-        console.log(this.$store.state.Students.students)
-        let res = values(this.$store.state.Students.students);
-        if(this.viewSelected){
-          if(this.selected.length<1) this.viewSelected=false;
-          else res = res.filter((e)=>this.selected.indexOf(e.studentID)!==-1);
-          console.log(this.viewSelected);
-        }
-        return res;
-      },
+      // it() {
+      //   console.log(this.$store.state.Students.students)
+      //   let res = values(this.$store.state.Students.students);
+      //   if(this.viewSelected){
+      //     if(this.selected.length<1) this.viewSelected=false;
+      //     else res = res.filter((e)=>this.selected.indexOf(e.studentID)!==-1);
+      //     console.log(this.viewSelected);
+      //   }
+      //   return res;
+      // },
       selectMode(){
         return this.selected.length>0;
       }
@@ -193,17 +189,39 @@
     mounted(){
       this.$refs.input.$el.focus();
       if(this.$route.query.selected){
-        this.selected = this.$route.query.selected.filter((e)=>this.$store.state.Students.students[e]!==undefined);
         this.viewSelected = true;
+        this.refresh();
       }
     },
     methods:{
+      async students_provider(cxt){
+        console.log(cxt)
+        let st, count;
+        if(this.viewSelected){
+          [st, count] = await TheStudent.loadWithLimit({[TheStudent.classRegex().test(this.query)?'group':'name']: this.query, ids: this.selected}, cxt);
+          if(this.$route.query.selected) this.selected = this.$route.query.selected.filter((e)=>find(st,(el)=>el.studentID==e)!==undefined);
+        }
+        else [st, count] = await TheStudent.loadWithLimit({[TheStudent.classRegex().test(this.query)?'group':'name']: this.query}, cxt);
+        this.size = count;
+        console.log(st);
+        return st;
+      },
       remove(){
         this.$modal.show('danger-students-action', {
           type: 'remove',
-          callback(){
-            this.$wait(this.$store.dispatch('Students/remove', this.selected).then(()=>{this.$modal.hide('danger-students-action'); this.selected = [];}), true, 0);
+          callback: ()=>{
+            this.$wait(this.$store.dispatch('Students/remove', this.selected).then(
+                    ()=>{
+                      this.$modal.hide('danger-students-action');
+                      this.selected = [];
+                      this.refresh()
+                    }), true, 0);
           }
+        });
+      },
+      refresh(){
+        this.$nextTick(()=>{
+          this.$refs.table.refresh();
         });
       },
       reident(){
@@ -226,6 +244,7 @@
       toggleViewMode(){
         this.viewSelected = !this.viewSelected;
         if(this.viewSelected) this.query = '';
+        this.refresh();
       },
       async generatePDF(){
         let doc = new jsPDF();
@@ -302,6 +321,7 @@
         })
       },
       async founded(){
+        return TheStudent.loadAll([TheStudent.classRegex().test(this.query)?'group':'name', 'like', "%"+this.query+"%"]);
         console.log(this.query);
         if(this.query!==''){
           this.sortBy = '';
