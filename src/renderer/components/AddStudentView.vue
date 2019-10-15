@@ -100,7 +100,7 @@
           pays: this.paysVal
         });
         console.log(st);
-        this.added.push(st.id);
+        this.added.push(st.studentID);
         if (this.addMore) {
           this.name = null;
           this.paysVal = true;

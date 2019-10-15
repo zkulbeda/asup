@@ -107,6 +107,7 @@
   import ScanningStudentCardModel from './ScanningStudentCardModel';
   import debounce from 'lodash/debounce';
   import TheStudent from "./TheStudent";
+  import {compact, flattenDeep} from "lodash/array";
   Vue.use(VueFuse);
   let addMontFont = (d,m,t)=>{
     d.addFileToVFS('mont'+t+'.ttf',m.split(',')[1]);
@@ -186,24 +187,32 @@
           this.inputQuery(e);
       }
     },
+    beforeMount(){
+      if(this.$route.query.selected){
+        this.$route.query.selected = flattenDeep([this.$route.query.selected]);
+        this.selected = compact(this.$route.query.selected.map((e)=>Number(e).valueOf())).map((e)=>Number(e).valueOf());
+        this.viewSelected = true;
+      }
+    },
     mounted(){
       this.$refs.input.$el.focus();
-      if(this.$route.query.selected){
-        this.viewSelected = true;
-        this.refresh();
-      }
+      console.log(this.$route)
+      this.refresh();
     },
     methods:{
       async students_provider(cxt){
         console.log(cxt)
         let st, count;
+        if(this.selected.length<=0){
+          this.viewSelected = false;
+        }
         if(this.viewSelected){
           [st, count] = await TheStudent.loadWithLimit({[TheStudent.classRegex().test(this.query)?'group':'name']: this.query, ids: this.selected}, cxt);
-          if(this.$route.query.selected) this.selected = this.$route.query.selected.filter((e)=>find(st,(el)=>el.studentID==e)!==undefined);
+          this.selected = this.selected.filter((e)=>find(st,(el)=>el.studentID==e)!==undefined);
         }
         else [st, count] = await TheStudent.loadWithLimit({[TheStudent.classRegex().test(this.query)?'group':'name']: this.query}, cxt);
         this.size = count;
-        console.log(st);
+        console.log(st, this.selected);
         return st;
       },
       remove(){
@@ -306,6 +315,10 @@
         }
         else{
           this.selected.splice(i, 1);
+        }
+        if(this.selected.length<=0){
+          this.viewSelected = false;
+          this.refresh()
         }
         console.log(arguments);
       },
