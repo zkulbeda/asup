@@ -42,7 +42,7 @@
                                         <b-list-group-item v-for="(qr,i) in scannedList" href="#"
                                                            v-scrollInto="i===selected" :active="i===selected" :key="i"
                                                            @click="viewCard(i)">
-                                            {{$store.state.Students.students[qr.student_id].name}}
+                                            {{qr.name}}
                                             <!--              <span>{{qr.createdAt | formatTime}}</span>-->
                                         </b-list-group-item>
                                     </b-list-group>
@@ -129,7 +129,7 @@
             currentCard() {
                 if (this.selected !== null)
                     return {
-                        st: this.$store.state.Students.students[this.scannedList[this.selected].student_id],
+                        st: this.scannedList[this.selected],
                         rd: this.scannedList[this.selected]
                     };
                 else return null;

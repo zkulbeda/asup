@@ -17,9 +17,13 @@
         <h2>Создание отчёта</h2>
         <div class="CreateReportSelectDiv mt-3">
           <div class="CreateReportSelectText">Выберите месяц: </div>
-          <b-form-select id="month" v-model="selected" :options="options" size="sm" class="mt-1 CreateReportSelect"></b-form-select>
+          <b-input-group>
+            <b-form-select id="month" v-model="selected" :options="options" :class="{CreateReportSelect: true, 'border-success': canCreateReport}"></b-form-select>
+            <template v-slot:append>
+              <b-button @click="save" :disabled="!canCreateReport" :variant="canCreateReport?'success':'secondary'">Создать отчёт</b-button>
+            </template>
+          </b-input-group>
         </div>
-        <b-button class="mt-4" @click="save" :disabled="!canCreateReport">Создать отчёт</b-button>
         <p class="mt-2" v-if="!canCreateReport">Есть не закрытые дни. Закрой их, чтобы создать отчёт за месяц.</p>
       </div>
     </b-col>

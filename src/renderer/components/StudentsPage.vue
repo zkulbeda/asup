@@ -42,8 +42,8 @@
     </b-table>
     <div class="d-flex  justify-content-between align-items-center">
       <div>
-      <div v-if="selectMode" class="d-flex justify-content-start align-items-baseline">
-        <b-dropdown split @click="$wait(savePDF())" size="sm" id="dropdown-1" class="mr-2 dropdown-with-icon">
+        <div class="d-flex justify-content-start align-items-baseline">
+        <b-dropdown v-show="selectMode" split @click="$wait(savePDF())" size="sm" id="dropdown-1" class="mr-2 dropdown-with-icon">
           <template slot="button-content">
             <FileDownloadIcon class="top-1px"></FileDownloadIcon>Печать в PDF
           </template>
@@ -60,8 +60,9 @@
           <b-dropdown-item v-if="!viewSelected" @click="addAll"><CheckAllIcon></CheckAllIcon>Выделить все{{query.length>0?' найденные':''}}</b-dropdown-item>
           <b-dropdown-item @click="clearSelected"><ClearCheckIcon></ClearCheckIcon>Убрать выделение</b-dropdown-item>
         </b-dropdown>
-        <div> {{selected.length}} {{selected.length | numWord('элемент','элемента','элементов')}}</div>
-      </div>
+        <div v-if="selectMode"> {{selected.length}} {{selected.length | numWord('элемент','элемента','элементов')}}</div>
+        <div v-else class="d-flex justify-content-between align-items-center" style="color: #0D47A1;"><InfoIcon class="mr-1" style="font-size: 24px"></InfoIcon>Выделите ученика, чтобы выполнить действие.</div>
+        </div>
       </div>
       <b-pagination v-show="size>perPage"
                     v-model="currentPage"
@@ -89,7 +90,6 @@
   import qr from 'qrcode';
   import path from 'path';
   import fs from 'fs'
-  import values from 'lodash/values';
   import Vue from 'vue'
   import VueFuse from 'vue-fuse'
   import QrIcon from 'icons/QrcodeScan';
@@ -102,7 +102,8 @@
   import toNormalModeIcon from 'icons/FormatListChecks';
   import toOnlyCheckModeIcon from 'icons/CheckboxMultipleMarked';
   import CheckAllIcon from 'icons/CheckAll';
-  import ClearCheckIcon from 'icons/LayersOff';//CheckboxMultipleBlankOutline
+  import ClearCheckIcon from 'icons/LayersOff';
+  import InfoIcon from 'icons/InformationOutline';
   import StudentDangerActionModel from './StudentDangerActionModel';
   import ScanningStudentCardModel from './ScanningStudentCardModel';
   import debounce from 'lodash/debounce';
@@ -116,7 +117,7 @@
   export default {
     name: "StudentsPage",
     components:{FileDownloadIcon, QrIcon,ScanningStudentCardModel,StudentDangerActionModel,AdAccIcon,PrinterIcon,EditIcon,
-      DeleteIcon,ReAddIcon, toNormalModeIcon,toOnlyCheckModeIcon,CheckAllIcon,ClearCheckIcon},
+      DeleteIcon,ReAddIcon, toNormalModeIcon,toOnlyCheckModeIcon,CheckAllIcon,ClearCheckIcon, InfoIcon},
     data() {
       return {
         size: 0,
@@ -212,12 +213,14 @@
         }
         else [st, count] = await TheStudent.loadWithLimit({[TheStudent.classRegex().test(this.query)?'group':'name']: this.query}, cxt);
         this.size = count;
+        console.log(this.size)
         console.log(st, this.selected);
         return st;
       },
-      remove(){
+      async remove(){
         this.$modal.show('danger-students-action', {
           type: 'remove',
+          students: (await TheStudent.loadWithLimit({ids: this.selected},{}))[0],
           callback: ()=>{
             this.$wait(this.$store.dispatch('Students/remove', this.selected).then(
                     ()=>{
@@ -233,9 +236,10 @@
           this.$refs.table.refresh();
         });
       },
-      reident(){
+      async reident(){
         this.$modal.show('danger-students-action', {
           type: 'reidentification',
+          students: (await TheStudent.loadWithLimit({ids: this.selected},{}))[0],
           callback: ()=>{
             this.$wait(this.$store.dispatch('Students/reidentification', this.selected).then(()=>{this.$modal.hide('danger-students-action'); this.viewSelected = true}), true, 0);
           }
@@ -279,8 +283,8 @@
           return doc;
         }
         let i = 0, j = 0;
-        for(let st in this.selected){
-          let stInfo = this.$store.state.Students.students[this.selected[st]];
+        let [students] = await TheStudent.loadWithLimit({ids:this.selected},{})
+        for(let stInfo in students){
           await insertCard(doc,5+j*50,5+i*95, stInfo.name,stInfo.studentID, stInfo.pays);
           j++;
           if(j>3){
@@ -316,7 +320,7 @@
         else{
           this.selected.splice(i, 1);
         }
-        if(this.selected.length<=0){
+        if(this.viewSelected && this.selected.length<=0){
           this.viewSelected = false;
           this.refresh()
         }

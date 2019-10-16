@@ -55,6 +55,7 @@
       return {
         error: false,
         callback: null,
+        students: null,
         type: null
       }
     },
@@ -63,7 +64,7 @@
         return this.selected.length;
       },
       list() {
-        return groupBy(orderBy(this.selected.map((e) => this.$store.state.Students.students[e]), ['group', 'name']), 'group');
+        return groupBy(orderBy(this.students, ['group', 'name']), 'group');
       }
     },
     methods: {
@@ -76,6 +77,7 @@
       inits(e){
         console.log(e);
         this.callback=e.params.callback;
+        this.students=e.params.students;
         this.type=e.params.type||'remove';
       }
     }

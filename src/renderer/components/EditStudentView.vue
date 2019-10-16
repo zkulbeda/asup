@@ -49,6 +49,7 @@
 
   Vue.use(SimpleVueValidation);
   import msgs from './validation.js';
+  import TheStudent from "@/components/TheStudent";
 
   SimpleVueValidation.extendTemplates(msgs);
   const Validator = SimpleVueValidation.Validator;
@@ -76,17 +77,22 @@
           return Validator.value(v).required().regex(/^(1[0-1]|[5-9])([А-Я])?$/, "Формат класса: число от 5 до 11 и буква без пробела")
         },
     },
-    mounted(){
-      if(!this.$route.query.studentID || this.$store.state.Students.students[this.$route.query.studentID]===undefined){
+    async beforeMount(){
+      console.log('sdfgvfdag');
+      if(!this.$route.query.studentID) {
         console.error('Редактирование ученика - параметр не указан');
         this.$router.back();
-      }else{
-        let student = this.$store.state.Students.students[this.$route.query.studentID];
-        this.name = student.name;
-        this.group = student.group;
-        this.paysVal = student.pays;
-        this.studentID = student.studentID;
       }
+      let student = await TheStudent.loadFromID(this.$route.query.studentID)
+      if(!student){
+        console.error('Ученик не найден');
+        this.$router.back();
+        return;
+      }
+      this.name = student.name;
+      this.group = student.group;
+      this.paysVal = student.pays;
+      this.studentID = student.studentID;
     },
     methods: {
       check() {

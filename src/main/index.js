@@ -105,12 +105,6 @@ function createWindow() {
 
 let config = global.config = new Config();
 
-authenticator.options = {crypto};
-if(!config.has('totp-secret')){
-    config.set('totp-secret', authenticator.generateSecret(20)); //TODO: https://pypi.org/project/pyotp/
-    console.log('New Secret: ', config.get('totp-secret'));
-}
-
 const server = express();
 
 server.use(bodyParser.urlencoded())
@@ -241,26 +235,26 @@ promiseIpc.on('getMonths', async (e) => {
     let url = path.join(app.getPath('userData'), 'data/');
     let months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     return [true, true, true, true, true, true, true, true, true, true, true, true,];
-    let res = await Promise.all(months.map(async (e) => {
-        if (fs.existsSync(path.join(url, e + '/'))) {
-            let count = 0;
-            for (let i = 1; i < 32; i++) {
-                let p = path.join(app.getPath('userData'), 'data/' + e + '/' + i + '.json');
-                if (!fs.existsSync(p)) continue;
-                let vdb = nedb({
-                    filename: p,
-                    timestampData: true,
-                    autoload: true
-                });
-                let conf = await vdb.findOne({type: 'config'});
-                if (conf === null || conf.started == false) continue;
-                count++;
-            }
-            return count > 0;
-        }
-        return false;
-    }));
-    return res;
+    // let res = await Promise.all(months.map(async (e) => {
+    //     if (fs.existsSync(path.join(url, e + '/'))) {
+    //         let count = 0;
+    //         for (let i = 1; i < 32; i++) {
+    //             let p = path.join(app.getPath('userData'), 'data/' + e + '/' + i + '.json');
+    //             if (!fs.existsSync(p)) continue;
+    //             let vdb = nedb({
+    //                 filename: p,
+    //                 timestampData: true,
+    //                 autoload: true
+    //             });
+    //             let conf = await vdb.findOne({type: 'config'});
+    //             if (conf === null || conf.started == false) continue;
+    //             count++;
+    //         }
+    //         return count > 0;
+    //     }
+    //     return false;
+    // }));
+    // return res;
 });
 
 promiseIpc.on('getMonthData', async ({month}) => {
@@ -278,7 +272,7 @@ promiseIpc.on('getMonthData', async ({month}) => {
         console.log(students, i)
         data[i] = {
             type: day.isEnded() ? 'ended' : 'started',
-            students: students['count(`id`)'],
+            students: students,
             price: day.getPrice(),
             day: i
         };

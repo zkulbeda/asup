@@ -135,24 +135,30 @@ export default class TheStudent {
 
     static async loadWithLimit({name, group, ids}, {currentPage, perPage, sortBy, sortDesc}, db = database) {
         let knex = db().knex('students')
-            .limit(perPage).offset((currentPage - 1) * perPage)
             .orderBy(sortBy ? sortBy : 'name', sortDesc ? 'desc' : 'asc');
+        if(perPage !==undefined)
+            knex.limit(perPage).offset((currentPage - 1) * perPage)
+        let knexCount = db().knex('students').count('id')
         if (name) {
             for (let word in name.split(' '))
                 knex = knex.orWhere('name', 'like', "%" + word + "%")
+                knexCount.orWhere('name', 'like', "%" + word + "%")
         }
         if (group) {
             knex = knex.where('group', group);
+            knexCount.where('group', group);
         }
         if(ids){
             knex = knex.whereIn('id', ids);
+            knexCount.whereIn('id', ids);
         }
-        let [recs,c] = await Promise.all([db().raw(knex,true),db().raw(knex.count('id'),true)]);
+        let [recs,c] = await Promise.all([db().raw(knex,true), db().raw(knexCount,true)]);
         let r = [];
         for (let i in recs) {
             r.push(new this(recs[i], db));
         }
-        return [r, c['count(`id`)']];
+        console.log(c)
+        return [r, c[0]['count(`id`)']];
     }
 
     static async getDB(filename) {

@@ -150,7 +150,7 @@ export default class TheDay {
             return [];
         }
         let q = this._db().knex('records').where('day_id', this.id);
-        if (count) q = q.count('id')
+        if (count) q = q.count('records.id')
         else q = q.select("*")
         if (!(withWhoPays && withWhoNotPays) || group) {
             let sub_q = this._db().knex('students').select('id');
@@ -162,10 +162,12 @@ export default class TheDay {
             }
             q = q.where('student_id', 'in', sub_q);
         }
+        q.leftJoin('students', 'records.student_id', '=', 'students.id');
         console.log(q.toSQL());
         let res = await this._db().raw(q, true);
+        console.log(res);
         if(count == true){
-            return res[0]['count(`id`)']
+            return res[0]['count(`records`.`id`)']
         }
         return res;
     }
