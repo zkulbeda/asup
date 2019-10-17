@@ -139,6 +139,11 @@
             sortable: true
           },
           {
+            key: 'code',
+            label: 'Код',
+            sortable: false
+          },
+          {
             key: 'group',
             label: 'Класс',
             sortable: true,
@@ -284,8 +289,9 @@
         }
         let i = 0, j = 0;
         let [students] = await TheStudent.loadWithLimit({ids:this.selected},{})
-        for(let stInfo in students){
-          await insertCard(doc,5+j*50,5+i*95, stInfo.name,stInfo.studentID, stInfo.pays);
+        for(let stInfo of students){
+          console.log(stInfo)
+          await insertCard(doc,5+j*50,5+i*95, stInfo.name,stInfo.code, stInfo.pays);
           j++;
           if(j>3){
             j = 0;

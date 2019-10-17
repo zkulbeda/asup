@@ -30,15 +30,21 @@
         name: "StudentScanCard",
         computed: {
             hasStudent(){
+                console.log(this.data)
                 return this.data!==null;
             }
         },
         filters:{
             formatTime(time){
+                console.log(time)
                 return DateTime.fromSeconds(time).toLocaleString(DateTime.TIME_24_WITH_SECONDS);
             },
             formatTimeFromNow(time){
-                return moment.unix(time).locale('ru').fromNow();
+                let t = moment.unix(time);
+                if(moment().subtract({seconds: 50}).isBefore(t)){
+                    return '';
+                }
+                return t.locale('ru').fromNow();
             }
         }
     }

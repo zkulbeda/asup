@@ -140,9 +140,10 @@ export default class TheStudent {
             knex.limit(perPage).offset((currentPage - 1) * perPage)
         let knexCount = db().knex('students').count('id')
         if (name) {
-            for (let word in name.split(' '))
+            for (let word of name.split(' ')) {
                 knex = knex.orWhere('name', 'like', "%" + word + "%")
                 knexCount.orWhere('name', 'like', "%" + word + "%")
+            }
         }
         if (group) {
             knex = knex.where('group', group);

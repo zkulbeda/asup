@@ -17,7 +17,7 @@
         <h2>Создание отчёта</h2>
         <div class="CreateReportSelectDiv mt-3">
           <div class="CreateReportSelectText">Выберите месяц: </div>
-          <b-input-group>
+          <b-input-group style="width: 270px">
             <b-form-select id="month" v-model="selected" :options="options" :class="{CreateReportSelect: true, 'border-success': canCreateReport}"></b-form-select>
             <template v-slot:append>
               <b-button @click="save" :disabled="!canCreateReport" :variant="canCreateReport?'success':'secondary'">Создать отчёт</b-button>
@@ -447,7 +447,7 @@
 
 
   .CreateReportPage {
-    padding: 50px 0px;
+    padding: 20px 0px 50px 0px;
     display: flex;
     justify-content: center;
   }

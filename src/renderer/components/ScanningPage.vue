@@ -140,6 +140,9 @@
         },
         mounted() {
             this.MousetrapSpace = true;
+            window.addByCode = (code)=>{
+                this.onDetect(Promise.resolve({content: code, imageData: ''}));
+            }
         },
         methods: {
             viewCard(i) {
@@ -152,7 +155,7 @@
             },
             async onDetect(promise) {
                 try {
-                    const all = promise;
+                    const all = await promise;
                     console.groupCollapsed('Код: ' + all.content)
                     //let img = imagedata_to_image(all.imageData);
                     // let img = await this.$store.dispatch('ThisDay/createImageUrl', {rd:{id: all.content, }, imagedata: all.imageData})

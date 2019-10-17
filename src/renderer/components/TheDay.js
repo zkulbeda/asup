@@ -137,11 +137,11 @@ export default class TheDay {
     async recordStudent(student) {
         let f = await this._db().getModel("records").findOne({day_id: this.id, student_id: student.studentID});
         if (f !== undefined) throw new RuntimeError(4, {student, record: f});
-        return this._db().getModel("records").create({
+        return {...(await this._db().getModel("records").create({
             day_id: this.id,
             student_id: student.studentID,
             time: getSecondsStamp(DateTime.local())
-        });
+        })), ...student.toJSON()};
     }
 
     async getList({withWhoPays = true, withWhoNotPays = true, count = false, group = undefined}) {

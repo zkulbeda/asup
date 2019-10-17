@@ -53,6 +53,7 @@ Vue.directive('scrollInto',{
 });
 import NProgress from 'nprogress';
 import {} from 'nprogress/nprogress.css';
+import * as moment from "moment";
 NProgress.configure({trickleSpeed: 100});
 Vue.use({
   install(Vue){
