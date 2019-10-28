@@ -131,7 +131,7 @@ export default class TheDay {
     }
 
     getPrice() {
-        return {free: this.free, notFree: this.not_free};
+        return {free: this.free, notFree: this.not_free };
     }
 
     async recordStudent(student) {

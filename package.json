@@ -82,6 +82,7 @@
     "data-collection": "^1.1.6",
     "electron-promise-ipc": "^1.2.2",
     "electron-store": "^3.2.0",
+    "evilscan": "^1.7.5",
     "excel4node": "^1.7.1",
     "express": "^4.17.1",
     "express-validator": "^6.2.0",
@@ -105,6 +106,7 @@
     "nanoid": "^2.0.4",
     "nedb": "^1.8.0",
     "nedb-promise": "^2.0.1",
+    "node-ssdp": "^4.0.0",
     "nprogress": "^0.2.0",
     "otplib": "^11.0.1",
     "pdfkit": "^0.9.1",
@@ -130,6 +132,7 @@
     "vuex-electron": "^1.0.0",
     "webrtc-adapter": "^7.2.3",
     "worker-loader": "^2.0.0",
+    "ws": "^7.2.0",
     "yargs": "^14.0.0"
   },
   "devDependencies": {

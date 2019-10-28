@@ -212,9 +212,11 @@ server.use(async(e,req,res,next)=>{
     return res.status(500).json({errors: [e.toString()], error: e})
 })
 
+let wsc = null;
+
 app.on('ready', async () => {
     await initDB(db)
-    createWindow()
+    //createWindow()
     let s = server.listen(9321, ()=>{
         console.log(s.address())
     })
