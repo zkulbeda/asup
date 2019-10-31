@@ -82,9 +82,30 @@ let spec_command = {
         }
     ]
 }
+let response = {
+    type: "response",
+    data1: {
+        "1": {
+            "1": [1],
+            "2": [1]
+        }
+    },
+    data: [
+        {
+            sector: 1,
+            block: [
+                {
+                    block: 1,
+                    type: "write",
+                    data: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
+                },
+            ],
+        },
+    ]
+}
 let spec_write = {
-    type: "command",
-    command: "write",
+    type: "command", //WS_TYPE_COMMAND
+    command: "write", //WS_COMMAND_WRITE
     sectors: [
         {
             sector: 1,
