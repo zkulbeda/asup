@@ -76,7 +76,6 @@ export default class TheStudent {
     }
 
     async save() {
-        this.mustDBInstance();
         await this._db().getModel('students').update({id: this.studentID}, this.toJSONSQL());
     }
 
@@ -128,13 +127,14 @@ export default class TheStudent {
         }
     }
 
-    static async loadFromCard(card_data, throws = true, db = database) {
-        let rec = await db().getModel("students").findOne({card_data: card_data}, {limit: 1});
+    static async loadFromCard(card_data, card_id, throws = true, db = database) {
+        console.log(crc32(""+card_id+card_data));
+        let rec = await db().getModel("students").findOne({card_data: crc32(""+card_id+card_data)}, {limit: 1});
         console.log(rec)
         if (rec) {
             return new this(rec, db);
         } else {
-            if (throws) throw new RuntimeError(1, {code});
+            if (throws) throw new RuntimeError(1, {card_data});
             else return false;
         }
     }
@@ -224,6 +224,8 @@ export default class TheStudent {
     async linkCard(card_id) {
         let salt = await this.constructor.generateID('code', this._db);
         let data = crc32(salt+this.hash);
+        console.log(this.hash);
+        console.log("db data", data);
         let card_data = crc32(""+card_id+data);
         this.card_data = card_data;
         let res = await this.save();

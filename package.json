@@ -5,6 +5,7 @@
   "description": "An electron-vue project",
   "license": null,
   "main": "./dist/electron/main.js",
+  "type": "module",
   "scripts": {
     "build": "node .electron-vue/build.js && electron-builder",
     "build:dir": "node .electron-vue/build.js && electron-builder --dir",
@@ -83,6 +84,7 @@
     "data-collection": "^1.1.6",
     "electron-promise-ipc": "^1.2.2",
     "electron-store": "^3.2.0",
+    "eventemitter3": "^4.0.0",
     "evilscan": "^1.7.5",
     "excel4node": "^1.7.1",
     "express": "^4.17.1",

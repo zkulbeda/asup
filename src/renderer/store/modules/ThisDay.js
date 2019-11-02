@@ -17,6 +17,7 @@ function getCanvasBlob(canvas, ...p) {
 }
 // let {app} = require('electron').remote;
 import {getGlobal} from "@/components/utils";
+import promiseIpc from "electron-promise-ipc";
 
 let Day = null;
 let timeNow = DateTime.local();
@@ -58,17 +59,27 @@ const mutations = {
 
 const actions = {
   async init({dispatch, commit}) {
+    promiseIpc.on("day_started", ()=>dispatch("refreshSession"));
+    promiseIpc.on("student_recorded", ()=>dispatch("refreshList"));
       console.log('init ThisDay');
+      dispatch("refreshSession");
+    commit('init');
+  },
+  async refreshSession({dispatch, commit}){
     commit('setLoadingState', true);
     let m = DateTime.local().month, d = DateTime.local().day;
     Day = await TheDay.loadFromDate(m,d);
     if(Day){
-        console.log('День',Day.config);
-        commit('setStartState', [Day.config.started, Day.config.ended, m,d]);
-        commit('setList', await Day.getRecords());
-        commit('setLoadingState', false);
+      console.log('День',Day.config);
+      commit('setStartState', [Day.config.started, Day.config.ended, m,d]);
+      dispatch("refreshList");
     }else commit('setStartState', [false, false, m,d]);
-    commit('init');
+  },
+  async refreshList({dispatch, commit}){
+    commit('setLoadingState', true);
+    commit('setList', await Day.getRecords());
+    commit('setLoadingState', false);
+
   },
   async startSession({commit, state}) {
     Day = await TheDay.startNewDay(state.month, this.state.day)

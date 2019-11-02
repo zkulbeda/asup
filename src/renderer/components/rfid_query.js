@@ -1,18 +1,20 @@
-const WS_TYPE_RESPONSE = 1
-const WS_TYPE_COMMAND = 2
-const WS_TYPE_LOG = 3
-const WS_COMMAND_READ = 1
-const WS_COMMAND_WRITE = 2
-const WS_COMMAND_CONTINUE = 3
-const WS_OK_RESPONSE = 1;
-const WS_ERROR_RESPONSE = 0;
-const WS_NONE_RESPONSE = 2
-const WS_KEY_A = 1
-const WS_KEY_B = 2
-const WS_WRITE_TYPE_ALL = 1
-const WS_WRITE_TYPE_INC = 2
-const WS_WRITE_TYPE_DEC = 3
-function read_sector(sector, blocks = [], key){
+export const WS_TYPE_RESPONSE = 1
+export const WS_TYPE_COMMAND = 2
+export const WS_TYPE_LOG = 3
+export const WS_COMMAND_READ = 1
+export const WS_COMMAND_WRITE = 2
+export const WS_COMMAND_CONTINUE = 3
+export const WS_OK_RESPONSE = 1;
+export const WS_ERROR_RESPONSE = 0;
+export const WS_NONE_RESPONSE = 2
+export const WS_KEY_A = 1
+export const WS_KEY_B = 2
+export const WS_WRITE_TYPE_ALL = 1
+export const WS_WRITE_TYPE_INC = 2
+export const WS_WRITE_TYPE_DEC = 3
+let isString = require('lodash/isString');
+let isArray = require('lodash/isArray');
+export function read_sector(sector, blocks = [], key){
     if(!isArray(blocks)){
         throw Error("Параметр blocks должен быть массивом");
     }
@@ -32,7 +34,7 @@ function read_sector(sector, blocks = [], key){
     }
 }
 
-function write_block(block, data){
+export function write_block(block, data){
     let d = [];
     for(let i = 0; i<16; i++){
         d[i] = data[i] || 0;
@@ -44,7 +46,7 @@ function write_block(block, data){
     }
 }
 
-function write_sector(sector, blocks = [], key){
+export function write_sector(sector, blocks = [], key){
     return {
         sector,
         blocks: blocks,
@@ -53,7 +55,7 @@ function write_sector(sector, blocks = [], key){
     }
 }
 
-function make_command(command, command_data = undefined){
+export function make_command(command, command_data = undefined){
     if(isString(command)){
         switch (command.toLowerCase()) {
             case 'w':
@@ -76,7 +78,7 @@ function make_command(command, command_data = undefined){
     }
 }
 
-function make_request(status, command){
+export function make_request(status, command){
     if(status===null){
         status = WS_NONE_RESPONSE;
     }
@@ -107,24 +109,41 @@ function make_request(status, command){
     return data;
 }
 
-export {
-    make_request,
-    make_command,
-    write_sector,
-    write_block,
-    read_sector,
-    WS_TYPE_RESPONSE,
-    WS_TYPE_COMMAND,
-    WS_TYPE_LOG,
-    WS_COMMAND_READ,
-    WS_COMMAND_WRITE,
-    WS_COMMAND_CONTINUE,
-    WS_OK_RESPONSE ,
-    WS_ERROR_RESPONSE ,
-    WS_NONE_RESPONSE,
-    WS_KEY_A,
-    WS_KEY_B,
-    WS_WRITE_TYPE_ALL,
-    WS_WRITE_TYPE_INC,
-    WS_WRITE_TYPE_DEC,
+
+export class MifareKey{
+    constructor(key, key_type) {
+        this.key = [];
+        for(let i = 0; i<6; i++){
+            this.key[i] = key[i] || 0;
+        }
+        if(isString(key_type)){
+            key_type = key_type.toLowerCase()=='b'?WS_KEY_B:WS_KEY_A;
+        }
+        if(key_type!=WS_KEY_A && key_type!=WS_KEY_B){
+            throw Error('Не указан тип ключа');
+        }
+        this.key_type = key_type;
+    }
 }
+// module.exports = {
+//     make_request,
+//     make_command,
+//     write_sector,
+//     write_block,
+//     read_sector,
+//     WS_TYPE_RESPONSE,
+//     WS_TYPE_COMMAND,
+//     WS_TYPE_LOG,
+//     WS_COMMAND_READ,
+//     WS_COMMAND_WRITE,
+//     WS_COMMAND_CONTINUE,
+//     WS_OK_RESPONSE ,
+//     WS_ERROR_RESPONSE ,
+//     WS_NONE_RESPONSE,
+//     WS_KEY_A,
+//     WS_KEY_B,
+//     WS_WRITE_TYPE_ALL,
+//     WS_WRITE_TYPE_INC,
+//     WS_WRITE_TYPE_DEC,
+//     MifareKey
+// }

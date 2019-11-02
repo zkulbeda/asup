@@ -2,7 +2,8 @@ import keyBy from 'lodash/keyBy'
 import faker from 'faker';
 faker.locale = 'ru';
 import TheStudent from "@/components/TheStudent";
-import {RuntimeError} from "@/components/utils";
+import {getGlobal, RuntimeError} from "@/components/utils";
+import promiseIpc from "electron-promise-ipc";
 
 const state = {
   students: null,
@@ -90,6 +91,18 @@ const actions = {
     }
     await dispatch('refreshStudents');
   },
+  async record_card({dispatch}, selected){
+    let user = await TheStudent.loadFromID(selected);
+    let ws = null;
+    let connections = await promiseIpc.send('getRFIDConnections')
+    console.log(connections);
+    let c = null;
+    for(let i in connections){
+      c = connections[i];
+      break;
+    }
+    await promiseIpc.send('RFIDRecordCard', {student_id: user.studentID, connection: c});
+    },
   async remove({dispatch},selected) {
     await TheStudent.removeMany(selected);
     await dispatch('refreshStudents');

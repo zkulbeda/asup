@@ -51,6 +51,7 @@
           <b-dropdown-item v-if="selected.length==1" @click="edit"><EditIcon></EditIcon>Изменить</b-dropdown-item>
           <b-dropdown-item @click="remove"><DeleteIcon></DeleteIcon>Удалить</b-dropdown-item>
           <b-dropdown-item @click="reident"><ReAddIcon></ReAddIcon>Изменить идентификатор</b-dropdown-item>
+          <b-dropdown-item @click="recordCard"><ReAddIcon></ReAddIcon>Привязать карту</b-dropdown-item>
           <b-dropdown-divider></b-dropdown-divider>
           <b-dropdown-item @click="toggleViewMode">
             <toNormalModeIcon v-if="viewSelected"></toNormalModeIcon>
@@ -249,6 +250,9 @@
             this.$wait(this.$store.dispatch('Students/reidentification', this.selected).then(()=>{this.$modal.hide('danger-students-action'); this.viewSelected = true}), true, 0);
           }
         });
+      },
+      async recordCard(){
+        await this.$store.dispatch('Students/record_card', this.selected[0]);
       },
       async detect(d){
         let r = await this.$store.dispatch('Students/find', d);

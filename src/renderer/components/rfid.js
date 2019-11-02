@@ -17,10 +17,11 @@ let isString = require('lodash/isString');
 let isArray = require('lodash/isArray');
 let EventEmitter = require("events");
 let q = require('./rfid_query');
+const MifareKey = q.MifareKey;
 let axios = require('axios');
 let Client = require('node-ssdp').Client;
 
-class RFIDDeviceConnection extends EventEmitter{
+export class RFIDDeviceConnection extends EventEmitter{
     static toByteArray(/*long*/long) {
         // we want to represent the input as a 8-bytes array
         var byteArray = [0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -37,6 +38,7 @@ class RFIDDeviceConnection extends EventEmitter{
         return byteArray;
     }
     static fromByteArray(/*byte[]*/byteArray) {
+        byteArray = byteArray.slice(0,8);
         var value = 0;
         for ( var i = byteArray.length - 1; i >= 1; i--) {
             value = (value * 256) + byteArray[i];
@@ -45,19 +47,21 @@ class RFIDDeviceConnection extends EventEmitter{
         return byteArray[0]?-value:value;
     }
 
-    constructor(ws, req, device_port, key_a, key_b){
+    constructor(ws, req, device_port, key_a, key_b, on_scan_callback){
         super();
         this.ws = ws;
         this.req = req;
         this.key_a = key_a;
         this.key_b = key_b;
-        ws.on('close', closed)
+        this.closedWithContext = this.closed.bind(this);
+        ws.on('close', this.closedWithContext)
         this.isAlive = true;
-        data.on('pong', ()=>{
+        ws.on('pong', ()=>{
             this.isAlive = true;
         });
         this.device_port = device_port;
         this.scanning = false;
+        this.on_scan_callback = on_scan_callback;
     }
 
     async getInformation(){
@@ -66,23 +70,71 @@ class RFIDDeviceConnection extends EventEmitter{
     }
 
     static parse(message){
+        console.log(message);
         return JSON.parse(message);
     }
 
-    handle_scan(data){
-        console.log();//
+    async handle_scan(message){
+        let d = this.constructor.parse(message);
+        let data = d[2][1].slice(0,16);
+        console.log(data);
+        let data_number = this.constructor.fromByteArray(data);
+        console.log(data_number);
+        if(await this.on_scan_callback(data_number, 5)){
+            this.send(q.make_request('ok',q.make_command('c')));
+        }else{
+            this.send(q.make_request('err',q.make_command('c')));
+        }
     }
 
-    start_scan(){
+    start_scan(return_command = false){
         if(this.scanning) {
             console.warn('already scan');
             return;
         }
-        this.ws.on('message', this.handle_scan);
-        this.send(q.make_request('none', q.make_command('r',[q.read_sector(1,[1],this.key_a)])));
+        this.handle_scan_with_context = this.handle_scan.bind(this);
+        this.ws.on('message', this.handle_scan_with_context);
+        let command = q.make_command('r',[q.read_sector(2,[1],this.key_a)]);
+        if(return_command){
+            return command;
+        }else{
+            this.send(q.make_request('none',command));
+        }
+        this.scanning = true;
+    }
+
+    stop_scan(command){
+        if(!this.scanning){return false;}
+        this.ws.removeListener('message', this.handle_scan_with_context);
+        this.scanning = false;
+        this.send(q.make_request('none',command));
+        return true;
+    }
+
+    async record_student(student, rewrite_callback){
+        let was_scanning = this.stop_scan();
+        let d = await this.wait_response(q.make_request('none', q.make_command('r',[q.read_sector(2,[1],this.key_a)])));
+        let card_data = this.constructor.fromByteArray(d[2][1].slice(0,16));
+        if(await rewrite_callback(card_data)){
+            let new_data = await student.linkCard(5);
+            console.log("new card_data ",new_data);
+            console.log("new card_data bytes ",this.constructor.toByteArray(new_data));
+            console.log("test bytes ", this.constructor.fromByteArray(this.constructor.toByteArray(new_data)))
+            let d = await this.wait_response(q.make_request('none', q.make_command('w',[q.write_sector(2, [q.write_block(1,this.constructor.toByteArray(new_data))], this.key_b)])));
+            console.log(d);
+            if(d.status==0){
+                this.send(q.make_request('err', was_scanning?this.start_scan(true):undefined));
+                throw Error("Запись не удалась");
+            }else{
+                this.send(q.make_request('ok', was_scanning?this.start_scan(true):undefined));
+                return true;
+            }
+        }
+        return false;
     }
 
     send(data){
+        console.log(JSON.stringify(data));
         this.ws.send(JSON.stringify(data));
     }
 
@@ -90,12 +142,13 @@ class RFIDDeviceConnection extends EventEmitter{
         return new Promise((ok, err)=>{
             let t = this;
             function handle(text){
-                let data = JSON.parse(text);
+                let data = t.constructor.parse(text);
                 if(data.type == WS_TYPE_LOG) return;
                 t.ws.removeListener('message', handle);
                 ok(data);
             }
             this.ws.on('message', handle);
+            console.log(data);
             this.send(data);
         });
     }
@@ -113,41 +166,44 @@ class RFIDDeviceConnection extends EventEmitter{
     }
 }
 
-class RFIDDeviceServer{
+export class RFIDDeviceServer{
     constructor({
         key_a,
         key_b,
         device_port = 57300,
         server_port = 57301,
+        on_scan_callback = async()=>{}
                 }){
-        this.key_a = MifareKey(key_a, 'A');
-        this.key_b = MifareKey(key_b, 'B');
+        this.key_a = new MifareKey(key_a, 'A');
+        this.key_b = new MifareKey(key_b, 'B');
         this.device_port = device_port;
         this.server_port = server_port;
+        this.on_scan_callback = on_scan_callback;
 
         this.wss = new WebSocket.Server({
             port: this.server_port
         });
-        this.wss.on('connection', this.new_connection);
-        this.connections = [];
+        this.new_connection_with_context = this.new_connection.bind(this);
+        this.wss.on('connection', this.new_connection_with_context);
+        this.connections = {};
         this.ssdp = new Client();
-        this.ssdp.on('response', async function (headers, statusCode, rinfo) {
-            if(connected['::ffff:'+rinfo.address]!=undefined){
+        this.ssdp.on('response', async (headers, statusCode, rinfo)=>{
+            if(this.connections['::ffff:'+rinfo.address]!=undefined){
                 return;
             }
             console.log('connect to '+rinfo.address);
             try {
-                let test = await axios.get('http://' + rinfo.address + ':' + port + '/rfid');
+                let test = await axios.get('http://' + rinfo.address + ':' + device_port + '/rfid');
                 if(test.data=='yes'){
-                    await axios.get('http://'+rinfo.address+':'+port+'/connect');
+                    await axios.get('http://'+rinfo.address+':'+device_port+'/connect');
                 }
             }catch (e) {
                 console.log(e);
             }
         });
         this.interval_id = setInterval(()=>{
-            for(let id in connected){
-                let cn = connected[id];
+            for(let id in this.connections){
+                let cn = this.connections[id];
                 if (cn.isAlive === false) return cn.terminate();
                 cn.isAlive = false;
                 cn.ping();
@@ -157,7 +213,8 @@ class RFIDDeviceServer{
     }
 
     new_connection(ws, req){
-        let data = this.connections[req.connection.remoteAddress] = new RFIDDeviceConnection(ws, req, this.device_port, this.key_a, this.key_b);
+        let data = this.connections[req.connection.remoteAddress] = new RFIDDeviceConnection(ws, req, this.device_port, this.key_a, this.key_b, this.on_scan_callback);
+        data.start_scan();
         data.on('close', (reason)=>{
             this.connections[req.connection.remoteAddress] = undefined;
             delete this.connections[req.connection.remoteAddress];
@@ -171,54 +228,47 @@ class RFIDDeviceServer{
         return Promise.all(d);
     }
 }
-class MifareKey{
-    constructor(key, key_type) {
-        this.key = [];
-        for(let i = 0; i<6; i++){
-            this.key[i] = key[i] || 0;
-        }
-        if(isString(key_type)){
-            key_type = key_type.toLowerCase()=='b'?WS_KEY_B:WS_KEY_A;
-        }
-        if(key_type!=WS_KEY_A && key_type!=WS_KEY_B){
-            throw Error('Не указан тип ключа');
-        }
-        this.key_type = key_type;
-    }
-}
 
-
-const readline = require('readline');
-
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-let card_key =new MifareKey([0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF], 'A')
-let card_key_b =new MifareKey([0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF], 'B')
-rl.on('line', async (input) => {
-    switch (input) {
-        case "scan":
-            sendAll(JSON.stringify(spec_command));
-            break;
-        case "error":
-            sendAll(JSON.stringify(reserror));
-            break;
-        case "ok":
-            sendAll(JSON.stringify(resok));
-            break;
-        case "write":
-            let read_command = make_command('r', [read_sector(2,[1], card_key)]);
-            let c = await awaitAll(make_request('none', read_command));
-            while(true) {
-                c = c[0];
-                // console.log(c);
-                console.log(c[2][1][0]);
-                c[2][1][0]++;
-                let ans = await awaitAll(make_request("none", make_command('w', [write_sector(2,[write_block(1,c[2][1])], card_key_b)])));
-                ans = ans[0];
-                console.log(ans);
-                c = await awaitAll(make_request('ok', read_command));
-            }
-    }
-});
+// const readline = require('readline');
+//
+// const rl = readline.createInterface({
+//     input: process.stdin,
+//     output: process.stdout
+// });
+// let card_key =new MifareKey([0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF], 'A')
+// let card_key_b =new MifareKey([0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF], 'B')
+// let s = new RFIDDeviceServer({key_a: card_key.key, key_b: card_key_b.key});
+// rl.on('line', async (input) => {
+//     switch (input) {
+//         case "scan":
+//             console.log(s.connections);
+//             for(let k in s.connections){
+//                 s.connections[k].start_scan();
+//             }
+//             break;
+//         case "stop":
+//             for(let k in s.connections) {
+//                 s.connections[k].stop_scan();
+//             }
+//             break;
+//         case "error":
+//             sendAll(JSON.stringify(reserror));
+//             break;
+//         case "ok":
+//             sendAll(JSON.stringify(resok));
+//             break;
+//         case "write":
+//             let read_command = make_command('r', [read_sector(2,[1], card_key)]);
+//             let c = await awaitAll(make_request('none', read_command));
+//             while(true) {
+//                 c = c[0];
+//                 // console.log(c);
+//                 console.log(c[2][1][0]);
+//                 c[2][1][0]++;
+//                 let ans = await awaitAll(make_request("none", make_command('w', [write_sector(2,[write_block(1,c[2][1])], card_key_b)])));
+//                 ans = ans[0];
+//                 console.log(ans);
+//                 c = await awaitAll(make_request('ok', read_command));
+//             }
+//     }
+// });

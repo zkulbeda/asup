@@ -21,6 +21,10 @@ import TheStudent from "@/components/TheStudent";
 import bodyParser from "body-parser";
 import authenticator from 'otplib/authenticator'
 import crypto from 'crypto'
+import {RFIDDeviceServer} from '@/components/rfid';
+import {MifareKey} from '@/components/rfid_query';
+let card_key =new MifareKey([0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF], 'A')
+let card_key_b =new MifareKey([0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF], 'B')
 
 global.userPath = app.getPath('userData');
 /**
@@ -213,8 +217,37 @@ server.post('/record_student', [body('code').exists(), getDay()], async(req, res
 server.use(async(e,req,res,next)=>{
     return res.status(500).json({errors: [e.toString()], error: e})
 })
+let wss = null;
+global.wss = wss;
+global.getWSS = ()=>{
+    return wss;
+}
 
-let wsc = null;
+let day = null;
+
+let student_scan_callback = async (data, card_id)=>{
+    try {
+        let student = await TheStudent.loadFromCard(data, card_id);
+        let m = DateTime.local().month, d = DateTime.local().day;
+        if (!day) {
+            day = await TheDay.loadFromDate(m, d);
+            if(!day){
+                day = await TheDay.startNewDay(m, d);
+                global.mainWindow.webContents.send('day_started')
+                // promiseIpc.send('day_started', );
+            }
+        }else{
+            global.mainWindow.webContents.send('student_recorded')
+            // promiseIpc.send('student_recorded', mainWindow);
+        }
+        let rd = await day.recordStudent(student);
+        console.log(student, rd);
+        return true;
+    }catch (e) {
+        console.error(e);
+        return false;
+    }
+};
 
 app.on('ready', async () => {
     await initDB(db)
@@ -222,6 +255,7 @@ app.on('ready', async () => {
     let s = server.listen(9321, ()=>{
         console.log(s.address())
     })
+    wss = new RFIDDeviceServer({key_a: card_key.key, key_b: card_key_b.key, on_scan_callback: student_scan_callback});
 })
 
 app.on('window-all-closed', () => {
@@ -229,6 +263,18 @@ app.on('window-all-closed', () => {
         app.quit()
     }
 })
+
+promiseIpc.on('getRFIDConnections', ()=>{
+    let data = [];
+    for(let i in wss.connections){
+        data.push(i);
+    }
+    return data;
+});
+promiseIpc.on('RFIDRecordCard', async ({student_id,connection})=>{
+    let student = await TheStudent.loadFromID(student_id);
+    return wss.connections[connection].record_student(student, (d)=>{console.log(d); return true;});
+});
 promiseIpc.on('changeKioskMode', async (state) => {
     global.kiosk_mode = Boolean(state);
     global.mainWindow.webContents.reload();
