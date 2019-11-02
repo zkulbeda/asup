@@ -55,6 +55,8 @@ async function initDB(db) {
         name: {type: String, nullable: false},
         group: {type: String, nullable: false},
         pays: {type: Boolean, nullable: false},
+        hash: {type: Number, nullable: false},
+        card_data: {type: Number, nullable: false}
     }, {index: 'code'});
     global.days = await db.model('days', {
         id: 'increments',
@@ -216,7 +218,7 @@ let wsc = null;
 
 app.on('ready', async () => {
     await initDB(db)
-    //createWindow()
+    createWindow()
     let s = server.listen(9321, ()=>{
         console.log(s.address())
     })
@@ -365,7 +367,7 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
         ws.cell(last, 1).string(st[i].name).style(border);
         for (let j = 0; j < data.length; j++) {
             console.log(data[j].students);
-            if (findIndex(data[j].students, (e) => e.studentID === st[i].studentID) !== -1) {
+            if (findIndex(data[j].students, (e) => e.student_id === st[i].studentID) !== -1) {
                 ws.cell(last, 2 + j).number(st[i].pays ? data[j].price.notFree : data[j].price.free).style(border).style(dem);
             }
         }
@@ -385,7 +387,7 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
     for (let i = 0; i < data.length; i++) {
         ws.cell(last, 2 + i).formula('SUM(' + xl.getExcelCellRef(4, 2 + i) + ":" + xl.getExcelCellRef(last - 1, 2 + i) + ")").style(dem);
     }
-    ws.cell(last, 2 + data.length).formula('SUM(' + xl.getExcelCellRef(4, 2 + data.length) + ":" + xl.getExcelCellRef(last - 1, 2 + data.length) + ")").style(border);
+    ws.cell(last, 2 + data.length).formula('SUM(' + xl.getExcelCellRef(4, 2 + data.length) + ":" + xl.getExcelCellRef(last - 1, 2 + data.length) + ")").style(dem).style(border);
     last++;
 
     ws.cell(last, 1).string("Количество").style(styleRight).style(stTableH);

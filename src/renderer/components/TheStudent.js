@@ -5,6 +5,7 @@ import nedb from "nedb-promise";
 import path from "path";
 import {getGlobal} from "@/components/utils";
 import database from '@/components/db';
+import crc32 from "crc/crc32";
 
 export class ValidationError extends Error {
     constructor(message, param, data) {
@@ -22,14 +23,18 @@ export default class TheStudent {
      * @param {String} name
      * @param {String} group
      * @param {Boolean} pays
+     * @param {Number} hash
+     * @param {Number} card_data
      * @param {Number} id
      * @param {Function<Trilogy>} db
      */
-    constructor({studentID = null, code, name, group, pays, id = null}, db = database) {
+    constructor({studentID = null, code, name, group, pays, hash = null, card_data = null, id = null}, db = database) {
         this.studentID = studentID || id;
         this.code = code;
         this.name = trim(name);
         this.group = group;
+        this.hash = hash;
+        this.card_data = card_data;
         this.pays = Boolean(pays).valueOf();
         this._db = database;
     }
@@ -38,10 +43,13 @@ export default class TheStudent {
         return /^(1[0-1]|[5-9])([А-Я])?$/;
     }
 
-    static isValidFromObject({group}) {
+    static isValidFromObject({name, group}) {
         if (!(this.classRegex()).test(group)) {
             return new ValidationError('Формат класса: число от 5 до 11 и буква без пробела', 'group', group);
         }
+        // if (crc32(name)!=hash) {
+        //     return new ValidationError('Хеш не совпадает', 'hash', group);
+        // }
         return true;
     }
 
@@ -60,17 +68,11 @@ export default class TheStudent {
     }
 
     toJSON() {
-        return {studentID: this.studentID, code: this.code, name: this.name, group: this.group, pays: this.pays}
+        return {studentID: this.studentID, code: this.code, name: this.name, group: this.group, pays: this.pays, hash: this.hash, card_data: this.card_data}
     }
 
     toJSONSQL() {
-        return {id: this.studentID, code: this.code, name: this.name, group: this.group, pays: this.pays};
-    }
-
-    mustDB() {
-    }
-
-    mustDBInstance() {
+        return {id: this.studentID, code: this.code, name: this.name, group: this.group, pays: this.pays, hash: this.hash, card_data: this.card_data};
     }
 
     async save() {
@@ -78,12 +80,13 @@ export default class TheStudent {
         await this._db().getModel('students').update({id: this.studentID}, this.toJSONSQL());
     }
 
-    static async new({studentID = null, code = null, name, group, pays}, db = database) {
+    static async new({studentID = null, code = null, name, group, pays, card_data = 0}, db = database) {
         //if(!studentID) studentID = await this.generateID(db, 'id');
         if (!code) code = await this.generateID('code', db);
         let validationResult = this.isValidFromObject({name, group});
         if (validationResult !== true) throw validationResult;
-        let inst = await db().getModel('students').create({id: studentID, code, name, group, pays});
+        let hash = crc32(name);
+        let inst = await db().getModel('students').create({id: studentID, code, name, group, pays, hash, card_data});
         console.log(inst)
         return new this(inst, db);
     }
@@ -96,6 +99,7 @@ export default class TheStudent {
         else {
             inst.name = st.name ? st.name : inst.name;
             inst.group = st.group ? st.group : inst.group;
+            inst.card_data = st.card_data ? st.card_data : inst.card_data;
             inst.pays = st.pays !== undefined ? st.pays : inst.pays;
             await inst.save();
             return inst;
@@ -116,6 +120,28 @@ export default class TheStudent {
     static async loadFromCode(code, throws = true, db = database) {
         let rec = await db().getModel("students").findOne({code: code}, {limit: 1});
         console.log(rec)
+        if (rec) {
+            return new this(rec, db);
+        } else {
+            if (throws) throw new RuntimeError(1, {code});
+            else return false;
+        }
+    }
+
+    static async loadFromCard(card_data, throws = true, db = database) {
+        let rec = await db().getModel("students").findOne({card_data: card_data}, {limit: 1});
+        console.log(rec)
+        if (rec) {
+            return new this(rec, db);
+        } else {
+            if (throws) throw new RuntimeError(1, {code});
+            else return false;
+        }
+    }
+
+    static async loadFromHash(hash, throws = true, db = database) {
+        let rec = await db().getModel("students").findOne({hash: hash}, {limit: 1});
+        console.log(rec);
         if (rec) {
             return new this(rec, db);
         } else {
@@ -193,6 +219,15 @@ export default class TheStudent {
         let res = await this.save();
         console.log(res)
         return this.code;
+    }
+
+    async linkCard(card_id) {
+        let salt = await this.constructor.generateID('code', this._db);
+        let data = crc32(salt+this.hash);
+        let card_data = crc32(""+card_id+data);
+        this.card_data = card_data;
+        let res = await this.save();
+        return data;
     }
 
 }

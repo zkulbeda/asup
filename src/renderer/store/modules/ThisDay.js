@@ -71,13 +71,13 @@ const actions = {
     commit('init');
   },
   async startSession({commit, state}) {
-    Day = TheDay.startNewDay(state.month, this.state.day)
+    Day = await TheDay.startNewDay(state.month, this.state.day)
     commit('setStartState', [true, false]);
     return true;
   },
   async closeSession({commit, state, dispatch}, pl) {
     console.log(pl);
-    let res = Day.endDay(pl.free, pl.notFree);
+    let res = await Day.endDay(pl.free, pl.notFree);
     commit('setStartState', [true, false]);
     return res;
 

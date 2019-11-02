@@ -39,6 +39,7 @@ static const uint8_t TX   = 1;
 
 #define WS_TYPE_RESPONSE 1
 #define WS_TYPE_COMMAND 2
+#define WS_TYPE_LOG 3
 #define WS_COMMAND_READ 1
 #define WS_COMMAND_WRITE 2
 #define WS_COMMAND_CONTINUE 3
@@ -47,9 +48,39 @@ static const uint8_t TX   = 1;
 #define WS_OK_RESPONSE 1
 #define WS_ERROR_RESPONSE 0
 #define WS_NONE_RESPONSE 2
+#define WS_KEY_A 1
+#define WS_KEY_B 2
+#define WS_WRITE_TYPE_ALL 1
+#define WS_WRITE_TYPE_INC 2
+#define WS_WRITE_TYPE_DEC 3
 
 #define RST_PIN         D3           // Configurable, see typical pin layout above
 #define SS_PIN          D4          // Configurable, see typical pin layout above
+
+#define DEBUG 0
+
+void wln(String a){
+  if(!DEBUG) return;
+  Serial.println(a);
+}
+void w(String a){
+  if(!DEBUG) return;
+  Serial.print(a);
+}
+
+void wln(byte a){
+  if(!DEBUG) return;
+  Serial.println(a);
+}
+void w(byte a){
+  if(!DEBUG) return;
+  Serial.print(a);
+}
+
+void wln(){
+  if(DEBUG) return;
+  Serial.println();
+}
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 
@@ -174,8 +205,10 @@ void rfid_scan_callback();
 bool rfid_scan_enable();
 void rfid_scan_disable();
 
-Task RFIDScanTask(500, TASK_FOREVER, &rfid_scan_callback, &ts, false, &rfid_scan_enable, &rfid_scan_disable);
-Task RFIDWriteTask(500, TASK_FOREVER, &rfid_write_callback, &ts, false, &rfid_scan_enable, &rfid_scan_disable);
+#define DELAY_TASK DEBUG?500:0
+
+Task RFIDScanTask(DELAY_TASK, TASK_FOREVER, &rfid_scan_callback, &ts, false, &rfid_scan_enable, &rfid_scan_disable);
+Task RFIDWriteTask(DELAY_TASK, TASK_FOREVER, &rfid_write_callback, &ts, false, &rfid_scan_enable, &rfid_scan_disable);
 bool server_response_ok_on();
 bool server_response_error_on();
 void server_response_off();
@@ -200,13 +233,6 @@ void server_response_off(){
 }
 void server_response_disable(){
   //Serial.println("disssssss");  
-}
-
-void wln(String a){
-  Serial.println(a);
-}
-void w(String a){
-  Serial.print(a);
 }
 
 void start_command(){
@@ -257,17 +283,17 @@ void onMessage(websockets::WebsocketsClient& client, websockets::WebsocketsMessa
     ws_log(message.data());
     return;
   }
-  Serial.println(doc["type"].as<int>());
-  switch(doc["type"].as<int>()){
+  wln(doc["type"].as<byte>());
+  switch(doc["type"].as<byte>()){
     case WS_TYPE_RESPONSE:
       //Serial.println("response");
       waiting.setWaiting();
       card_status = doc["status"];
-      Serial.println((byte)doc["status"]);
+      wln((byte)doc["status"]);
       if(card_status != WS_NONE_RESPONSE){
         LastCardCleaner.enableDelayed();
       }else{
-        Serial.println("sdfdsfdsfsdf");
+        wln("sdfdsfdsfsdf");
         clear_last_card_id();
       }
 //      if(doc["status"] == WS_OK_RESPONSE){
@@ -290,7 +316,7 @@ void onMessage(websockets::WebsocketsClient& client, websockets::WebsocketsMessa
         RFIDScanTask.disable();
         RFIDWriteTask.disable();
         //Serial.println(doc["command"].as<int>());
-        switch(doc["command"].as<int>()){
+        switch(doc["command"].as<byte>()){
           case WS_COMMAND_READ: {
               data_to_read.clear();
               //Serial.println("command_read");
@@ -301,7 +327,7 @@ void onMessage(websockets::WebsocketsClient& client, websockets::WebsocketsMessa
                 JsonArray block = (*it)["blocks"];
                 for (JsonArray::iterator itt=block.begin(); itt!=block.end(); ++itt) {
                   tmp.blocks.push_back(itt->as<byte>()-1);
-                  Serial.println("block "+(itt->as<byte>()));
+                  wln("block "+(itt->as<byte>()));
                 }
                 JsonArray key = (*it)["key"];
                 byte i = 0;
@@ -309,7 +335,7 @@ void onMessage(websockets::WebsocketsClient& client, websockets::WebsocketsMessa
                   tmp.key.keyByte[i] = itt->as<byte>();
                   i++;
                 }
-                tmp.key_type = (*it)["key_type"].as<char>();
+                tmp.key_type = (*it)["key_type"].as<byte>();
                 data_to_read.push_back(tmp);
               }
               mode = SCANING_MODE;
@@ -342,7 +368,7 @@ void onMessage(websockets::WebsocketsClient& client, websockets::WebsocketsMessa
                   tmp.key.keyByte[i] = it->as<byte>();
                   i++;
                 }
-                tmp.key_type = (*it)["key_type"].as<char>();
+                tmp.key_type = (*it)["key_type"].as<byte>();
                 data_to_write.push_back(tmp);
               }
               mode = RECORD_MODE;
@@ -433,7 +459,7 @@ void ws_log(String a){
 
 bool rfid_scan_enable(){
   mfrc522.PCD_Init();
-  Serial.println("init");
+  wln("init");
   return true;}
 void rfid_scan_disable(){}
 
@@ -448,13 +474,13 @@ void clear_last_card_id(){
     set_ready_state();
   }
   card_status = WS_NONE_RESPONSE;
-  Serial.println("clear");
+  wln("clear");
   LastCardCleaner.disable();
 }
 
 
 void rfid_scan_callback(){
-    ShowReaderDetails(); Serial.println('.');
+    ShowReaderDetails(); wln('.');
     if ( ! mfrc522.PICC_IsNewCardPresent()){
         return;
     }
@@ -470,18 +496,18 @@ void rfid_scan_callback(){
     Serial.print(F("Card UID:"));
     dump_byte_array(mfrc522.uid.uidByte, mfrc522.uid.size);
     bool is_equal = true;
-    for(int i = 0; i<4; i++){
+    for(byte i = 0; i<4; i++){
       is_equal = is_equal && last_id[i] == mfrc522.uid.uidByte[i];
     }
     if(is_equal){
-      Serial.println("EQUAL___===");
+      wln("EQUAL___===");
       LastCardCleaner.enableDelayed();
       return;  
     }
-    Serial.println();
-    Serial.print(F("PICC type: "));
+    wln();
+    wln(F("PICC type: "));
     MFRC522::PICC_Type piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
-    Serial.println(mfrc522.PICC_GetTypeName(piccType));
+    wln(mfrc522.PICC_GetTypeName(piccType));
 
     // Check for compatibility
     if (    piccType != MFRC522::PICC_TYPE_MIFARE_MINI
@@ -503,7 +529,7 @@ void rfid_scan_callback(){
       byte trailerBlock = sector*4+3;
       byte key_type = 0;
       //Serial.println(v.key_type=='B');
-      if(v.key_type=='B'){
+      if(v.key_type==WS_KEY_B){
         key_type = MFRC522::PICC_CMD_MF_AUTH_KEY_B;
       }else{ 
         key_type = MFRC522::PICC_CMD_MF_AUTH_KEY_A;
@@ -527,75 +553,18 @@ void rfid_scan_callback(){
             Serial.print(F("MIFARE_Read() failed: "));
             Serial.println(mfrc522.GetStatusCodeName(status));
         } 
-        for(int i = 0; i<18; i++){
+        for(byte i = 0; i<18; i++){
           block_data.add(buffer[i]);
         }
       }
     }
     String response;
     serializeJson(data_to_send, response);
-    for(int i = 0; i<4; i++){
+    for(byte i = 0; i<4; i++){
       last_id[i] = mfrc522.uid.uidByte[i];
     }
     ws.send(response);
     RFIDScanTask.disable();
-    return;
-    // In this sample we use the second sector,
-    // that is: sector #1, covering block #4 up to and including block #7
-    byte sector         = 1;
-    byte blockAddr      = 6;
-    byte dataBlock[]    = {
-        0x01, 0x02, 0x03, 0x04, //  1,  2,   3,  4,
-        0x05, 0x06, 0x07, 0x08, //  5,  6,   7,  8,
-        0x09, 0x0a, 0xff, 0x0b, //  9, 10, 255, 11,
-        0x0c, 0x0d, 0x0e, 0x0f  // 12, 13, 14, 15
-    };
-    byte trailerBlock   = 7;
-    MFRC522::StatusCode status;
-    byte buffer[18];
-    byte size = sizeof(buffer);
-
-    // Authenticate using key A
-    //Serial.println(F("Authenticating using key A..."));
-    status = (MFRC522::StatusCode) mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, trailerBlock, &key, &(mfrc522.uid));
-    if (status != MFRC522::STATUS_OK) {
-        Serial.print(F("PCD_Authenticate() failed: "));
-        Serial.println(mfrc522.GetStatusCodeName(status));
-        return;
-    }
-
-    // Read data from the block
-    //Serial.print(F("Reading data from block ")); Serial.print(blockAddr);
-    //Serial.println(F(" ..."));
-    status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blockAddr, buffer, &size);
-    if (status != MFRC522::STATUS_OK) {
-        Serial.print(F("MIFARE_Read() failed: "));
-        Serial.println(mfrc522.GetStatusCodeName(status));
-    }
-    //Serial.print(F("Data in block ")); Serial.print(blockAddr); Serial.println(F(":"));
-    //dump_byte_array(buffer, 16); Serial.println();
-    //Serial.println();
-
-    
-    //Serial.println(F("Authenticating again using key B..."));
-    status = (MFRC522::StatusCode) mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_B, trailerBlock, &key, &(mfrc522.uid));
-    if (status != MFRC522::STATUS_OK) {
-        Serial.print(F("PCD_Authenticate() failed: "));
-        Serial.println(mfrc522.GetStatusCodeName(status));
-        return;
-    }
-
-    buffer[0]++;
-    
-    status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(blockAddr, buffer, 16);
-    if (status != MFRC522::STATUS_OK) {
-        Serial.print(F("MIFARE_Write() failed: "));
-        Serial.println(mfrc522.GetStatusCodeName(status));
-    }
-    
-    Serial.println(buffer[0]);
-    Serial.println("Ok");
-
     // Halt PICC
     mfrc522.PICC_HaltA();
     // Stop encryption on PCD
@@ -603,7 +572,7 @@ void rfid_scan_callback(){
 }
 
 void rfid_write_callback(){
-    ShowReaderDetails(); Serial.println('.');
+    ShowReaderDetails(); wln('.');
     if ( ! mfrc522.PICC_IsNewCardPresent()){
         return;
     }
@@ -616,21 +585,21 @@ void rfid_write_callback(){
         
 
     // Show some details of the PICC (that is: the tag/card)
-    Serial.print(F("Card UID:"));
+    w(F("Card UID:"));
     dump_byte_array(mfrc522.uid.uidByte, mfrc522.uid.size);
     bool is_equal = true;
-    for(int i = 0; i<4; i++){
+    for(byte i = 0; i<4; i++){
       is_equal = is_equal && last_id[i] == mfrc522.uid.uidByte[i];
     }
     if(is_equal){
-      Serial.println("EQUAL___===");
+      wln("EQUAL___===");
       LastCardCleaner.enableDelayed();
       return;  
     }
-    Serial.println();
-    Serial.print(F("PICC type: "));
+    wln();
+    w(F("PICC type: "));
     MFRC522::PICC_Type piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
-    Serial.println(mfrc522.PICC_GetTypeName(piccType));
+    wln(mfrc522.PICC_GetTypeName(piccType));
 
     // Check for compatibility
     if (    piccType != MFRC522::PICC_TYPE_MIFARE_MINI
@@ -639,9 +608,7 @@ void rfid_write_callback(){
         ws_log(F("This sample only works with MIFARE Classic cards."));
         return;
     }
-    set_busy_state();
-
-    
+    set_busy_state();    
     DynamicJsonDocument data_to_send(200);
     JsonObject data_object = data_to_send.to<JsonObject>();
     data_object["type"] = WS_TYPE_RESPONSE;
@@ -652,7 +619,7 @@ void rfid_write_callback(){
       byte trailerBlock = sector*4+3;
       byte key_type = 0;
       //Serial.println(v.key_type=='B');
-      if(v.key_type=='B'){
+      if(v.key_type==WS_KEY_B){
         key_type = MFRC522::PICC_CMD_MF_AUTH_KEY_B;
       }else{ 
         key_type = MFRC522::PICC_CMD_MF_AUTH_KEY_A;
@@ -667,7 +634,7 @@ void rfid_write_callback(){
       byte buffer[18];
       byte size = sizeof(buffer);
       for(WritingBlock block: v.blocks){
-        for(int i = 0; i<16; i++){
+        for(byte i = 0; i<16; i++){
           buffer[i] = block.data[i];
         }
         dump_byte_array(buffer,16);
@@ -685,7 +652,7 @@ void rfid_write_callback(){
     data_to_send["status"] = all_has_been_wrote?WS_OK_RESPONSE:WS_ERROR_RESPONSE;
     String response;
     serializeJson(data_to_send, response);
-    for(int i = 0; i<4; i++){
+    for(byte i = 0; i<4; i++){
       last_id[i] = mfrc522.uid.uidByte[i];
     }
     ws.send(response);
@@ -780,6 +747,7 @@ void loop() {
  * Helper routine to dump a byte array as hex values to Serial.
  */
 void dump_byte_array(byte *buffer, byte bufferSize) {
+    if(!DEBUG) return;
     for (byte i = 0; i < bufferSize; i++) {
         Serial.print(buffer[i] < 0x10 ? " 0" : " ");
         Serial.print(buffer[i], HEX);

@@ -1,13 +1,69 @@
 const WS_TYPE_RESPONSE = 1
 const WS_TYPE_COMMAND = 2
+const WS_TYPE_LOG = 3
 const WS_COMMAND_READ = 1
 const WS_COMMAND_WRITE = 2
 const WS_COMMAND_CONTINUE = 3
 const WS_OK_RESPONSE = 1;
 const WS_ERROR_RESPONSE = 0;
 const WS_NONE_RESPONSE = 2
+const WS_KEY_A = 1
+const WS_KEY_B = 2
+const WS_WRITE_TYPE_ALL = 1
+const WS_WRITE_TYPE_INC = 2
+const WS_WRITE_TYPE_DEC = 3
 const WebSocket = require('ws');
+let isString = require('lodash/isString');
+let isArray = require('lodash/isArray');
 console.log('loading');
+let key = [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF];
+longToByteArray = function(/*long*/long) {
+    // we want to represent the input as a 8-bytes array
+    var byteArray = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    if(long < 0){
+        byteArray[0] = 1;
+        long = -long;
+    }
+    for ( var index = 1; index < byteArray.length; index ++ ) {
+        var byte = long & 0xff;
+        byteArray [ index ] = byte;
+        long = (long - byte) / 256 ;
+    }
+
+    return byteArray;
+};
+
+byteArrayToLong = function(/*byte[]*/byteArray) {
+    var value = 0;
+    for ( var i = byteArray.length - 1; i >= 1; i--) {
+        value = (value * 256) + byteArray[i];
+    }
+
+    return byteArray[0]?-value:value;
+};
+console.log(longToByteArray(2134321452353245));
+console.log(longToByteArray(-2134321452353245));
+console.log(longToByteArray(1756081449));
+console.log(longToByteArray(-632524173));
+console.log(byteArrayToLong(longToByteArray(-452353245)));
+function int_to_byte_array(number){
+
+}
+class MifareKey{
+    constructor(key, key_type) {
+        this.key = [];
+        for(let i = 0; i<6; i++){
+            this.key[i] = key[i] || 0;
+        }
+        if(isString(key_type)){
+            key_type = key_type.toLowerCase()=='b'?WS_KEY_B:WS_KEY_A;
+        }
+        if(key_type!=WS_KEY_A && key_type!=WS_KEY_B){
+            throw Error('Не указан тип ключа');
+        }
+        this.key_type = key_type;
+    }
+}
 // function setupWebSocket(){
 //     this.wsc = new WebSocket('ws://192.168.4.1:8080/');
 //
@@ -100,11 +156,12 @@ let sendAll = (text)=>{
 let awaitAll = (text)=>{
     let a = [];
     for(let i in connected) {
-        connected[i].ws.send(text);
-        a.push(ws_promise_response(connected[i].ws));
+        a.push(send(connected[i].ws, text));
     }
     return Promise.all(a);
 }
+let card_key =new MifareKey([0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF], 'A')
+let card_key_b =new MifareKey([0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF], 'B')
 rl.on('line', async (input) => {
     switch (input) {
         case "scan":
@@ -117,20 +174,131 @@ rl.on('line', async (input) => {
             sendAll(JSON.stringify(resok));
             break;
         case "write":
-            let ans = await awaitAll(JSON.stringify(spec_write));
-            ans = ans[0];
-            console.log(ans);
-            let c = await awaitAll(JSON.stringify({
-                ...spec_command,
-                type: WS_TYPE_RESPONSE,
-                status: WS_NONE_RESPONSE,
-                has_command: true
-            }));
-            console.log(c);
+            let read_command = make_command('r', [read_sector(2,[1], card_key)]);
+            let c = await awaitAll(make_request('none', read_command));
+            while(true) {
+                c = c[0];
+                // console.log(c);
+                console.log(c[2][1][0]);
+                c[2][1][0]++;
+                let ans = await awaitAll(make_request("none", make_command('w', [write_sector(2,[write_block(1,c[2][1])], card_key_b)])));
+                ans = ans[0];
+                console.log(ans);
+                c = await awaitAll(make_request('ok', read_command));
+            }
     }
 });
 
+//import isString from 'loadsh/isString';
 
+function read_sector(sector, blocks = [], key){
+    if(!isArray(blocks)){
+        throw Error("Параметр blocks должен быть массивом");
+    }
+    blocks.forEach((e)=>{
+        if(e<1 || e>4){
+            throw Error("Блока №"+e+" не существует");
+        }
+    });
+    if(!(key instanceof MifareKey)){
+        throw Error("Ключь должен быть экземпляром класса MifareKey");
+    }
+    return {
+        sector,
+        blocks: blocks,
+        key: key.key,
+        key_type: key.key_type
+    }
+}
+
+function write_block(block, data){
+    let d = [];
+    for(let i = 0; i<16; i++){
+        d[i] = data[i] || 0;
+    }
+    return {
+        block,
+        data: d,
+        type: WS_WRITE_TYPE_ALL
+    }
+}
+
+function write_sector(sector, blocks = [], key){
+    return {
+        sector,
+        blocks: blocks,
+        key: key.key,
+        key_type: key.key_type
+    }
+}
+
+function make_command(command, command_data = undefined){
+    if(isString(command)){
+        switch (command.toLowerCase()) {
+            case 'w':
+                command = WS_COMMAND_WRITE;
+                break;
+            case 'r':
+                command = WS_COMMAND_READ;
+                break;
+            case 'c':
+                command = WS_COMMAND_CONTINUE;
+        }
+    }
+    if(command!=WS_COMMAND_READ && command!=WS_COMMAND_WRITE && command!=WS_COMMAND_CONTINUE){
+        throw Error("Неверная команда");
+    }
+    let command_data_attr = "sectors";
+    return {
+        command,
+        [command_data_attr]: command_data
+    }
+}
+
+function make_request(status, command){
+    if(status===null){
+        status = WS_NONE_RESPONSE;
+    }
+    if(isString(status)){
+        switch (status) {
+            case 'ok':
+                status = WS_OK_RESPONSE;
+                break;
+            case 'err':
+                status = WS_ERROR_RESPONSE;
+                break;
+            case 'none':
+                status = WS_NONE_RESPONSE;
+                break;
+        }
+    }
+    if(status !=WS_OK_RESPONSE && status != WS_ERROR_RESPONSE && status !=WS_NONE_RESPONSE){
+        throw Error("Неверный статус ответа");
+    }
+    let data = {
+        type: WS_TYPE_RESPONSE,
+        status: status
+    }
+    if(command){
+        data.has_command = true;
+        data = {...data, ...command};
+    }
+    return data;
+}
+
+function send(ws, data){
+    return new Promise((ok, err)=>{
+        function handle(text){
+            let data = JSON.parse(text);
+            if(data.type == WS_TYPE_LOG) return;
+            ws.removeListener('message', handle);
+            ok(data);
+        }
+        ws.on('message', handle);
+        ws.send(JSON.stringify(data));
+        console.log(JSON.stringify(data));
+    });
+}
 
 let spec_command = {
     type: WS_TYPE_COMMAND,

@@ -102,7 +102,7 @@
       monthComputed(){
         if(!this.monthData) return [];
         let d = [];
-        let time = DateTime.local().startOf('month');
+        let time = DateTime.local().set({month: this.selected+1}).startOf('month');
         if(time.weekday!==1){
           for(let weekday = 1; weekday<time.weekday; weekday++){
             d.push({type: 'disable', day: time.minus({day: time.weekday-weekday}).day});
@@ -190,6 +190,7 @@
     },
     watch:{
       selected(n,o){
+        this.monthData = [];
         if(this.loading) return;
       this.$wait(promiseIpc.send('getMonthData',{month: n+1})
           .then((d)=>{this.monthData = d;}));
