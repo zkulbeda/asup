@@ -138,6 +138,9 @@
         beforeDestroy() {
             this.MousetrapSpace = false;
         },
+        beforeMount(){
+            this.$store.dispatch("ThisDay/refreshSession");
+        },
         mounted() {
             this.MousetrapSpace = true;
             window.addByCode = (code)=>{

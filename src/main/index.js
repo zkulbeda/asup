@@ -225,6 +225,15 @@ global.getWSS = ()=>{
 
 let day = null;
 
+promiseIpc.on("day_deleted", ({id})=>{
+    console.log(id, day.id);
+    if(day && id==day.id){
+        day = null;
+    }
+})
+
+let send_to_window_mode = false;
+
 let student_scan_callback = async (data, card_id)=>{
     try {
         let student = await TheStudent.loadFromCard(data, card_id);
@@ -240,6 +249,7 @@ let student_scan_callback = async (data, card_id)=>{
             global.mainWindow.webContents.send('student_recorded')
             // promiseIpc.send('student_recorded', mainWindow);
         }
+
         let rd = await day.recordStudent(student);
         console.log(student, rd);
         return true;
@@ -256,6 +266,12 @@ app.on('ready', async () => {
         console.log(s.address())
     })
     wss = new RFIDDeviceServer({key_a: card_key.key, key_b: card_key_b.key, on_scan_callback: student_scan_callback});
+    wss.on('connected',(connection)=>{
+        promiseIpc.send('connections_change', global.mainWindow.webContents);
+    });
+    wss.on('disconnected',(connection)=>{
+        promiseIpc.send('connections_change', global.mainWindow.webContents);
+    });
 })
 
 app.on('window-all-closed', () => {
@@ -331,7 +347,7 @@ promiseIpc.on('getMonthData', async ({month}) => {
 });
 
 let generateWS = (wb, shotname, name, st, data, stCell) => {
-    console.log(data);
+    //console.log(data);
     let styleCentered = {alignment: {horizontal: 'center', vertical: 'center'}};
     let styleRight = merge({}, styleCentered, {alignment: {horizontal: 'right', indent: 1}});
     let border = {
@@ -401,7 +417,7 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
     let k = 0;
     for (let i in data) {
         ws.column(2 + k).setWidth(6);
-        console.log(data[i].day + '', k);
+        //console.log(data[i].day + '', k);
         ws.cell(3, 2 + k).string(data[i].day + '').style(stCell);
         k++;
     }
@@ -412,7 +428,7 @@ let generateWS = (wb, shotname, name, st, data, stCell) => {
     for (let i in st) {
         ws.cell(last, 1).string(st[i].name).style(border);
         for (let j = 0; j < data.length; j++) {
-            console.log(data[j].students);
+            //console.log(data[j].students);
             if (findIndex(data[j].students, (e) => e.student_id === st[i].studentID) !== -1) {
                 ws.cell(last, 2 + j).number(st[i].pays ? data[j].price.notFree : data[j].price.free).style(border).style(dem);
             }

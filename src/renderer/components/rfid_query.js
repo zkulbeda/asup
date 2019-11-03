@@ -108,6 +108,12 @@ export function make_request(status, command){
     }
     return data;
 }
+export function make_command_request(command) {
+    return {
+        type: WS_TYPE_COMMAND,
+        ...command
+    }
+}
 
 
 export class MifareKey{

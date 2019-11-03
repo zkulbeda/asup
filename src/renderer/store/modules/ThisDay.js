@@ -89,7 +89,7 @@ const actions = {
   async closeSession({commit, state, dispatch}, pl) {
     console.log(pl);
     let res = await Day.endDay(pl.free, pl.notFree);
-    commit('setStartState', [true, false]);
+    commit('setStartState', [true, true]);
     return res;
 
   },

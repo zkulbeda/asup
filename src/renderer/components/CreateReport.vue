@@ -163,6 +163,7 @@
       },
       async deleteDay(d){
         let day = await TheDay.loadFromDate(d.dayToEdit.month,d.dayToEdit.day)
+        promiseIpc.send("day_deleted", {id: day.id});
         await day.removeDay();
         this.$delete(this.monthData,d.dayToEdit.day);
       },

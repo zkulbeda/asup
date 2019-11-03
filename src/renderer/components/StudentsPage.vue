@@ -10,6 +10,7 @@
         <b-form-input ref="input" @input="startTyping" :value="query" placeholder="Поиск..."></b-form-input>
         <b-input-group-append>
           <b-button variant="outline-secondary" class="btn-with-only-icon StudentPageScanIcon" @click="openScanModal"><QrIcon decorative></QrIcon></b-button>
+          <b-button variant="outline-secondary" class="btn-with-only-icon StudentPageScanIcon" @click="openScanModal"><CardScanIcon decorative></CardScanIcon></b-button>
         </b-input-group-append>
       </b-input-group>
     </b-form-group>
@@ -51,7 +52,7 @@
           <b-dropdown-item v-if="selected.length==1" @click="edit"><EditIcon></EditIcon>Изменить</b-dropdown-item>
           <b-dropdown-item @click="remove"><DeleteIcon></DeleteIcon>Удалить</b-dropdown-item>
           <b-dropdown-item @click="reident"><ReAddIcon></ReAddIcon>Изменить идентификатор</b-dropdown-item>
-          <b-dropdown-item @click="recordCard"><ReAddIcon></ReAddIcon>Привязать карту</b-dropdown-item>
+          <b-dropdown-item v-if="selected.length==1" @click="recordCard"><CreditCardWirelessOutlineIcon></CreditCardWirelessOutlineIcon>Привязать карту</b-dropdown-item>
           <b-dropdown-divider></b-dropdown-divider>
           <b-dropdown-item @click="toggleViewMode">
             <toNormalModeIcon v-if="viewSelected"></toNormalModeIcon>
@@ -77,6 +78,7 @@
     </div>
     <ScanningStudentCardModel :detect="detect"></ScanningStudentCardModel>
     <StudentDangerActionModel :selected="selected"></StudentDangerActionModel>
+    <SelectDeviceModel></SelectDeviceModel>
   </b-card>
 </template>
 
@@ -94,6 +96,7 @@
   import Vue from 'vue'
   import VueFuse from 'vue-fuse'
   import QrIcon from 'icons/QrcodeScan';
+  import CardScanIcon from 'icons/CreditCardScanOutline';
   import AdAccIcon from 'icons/AccountPlus';
   import FileDownloadIcon from 'icons/FileDownload';
   import PrinterIcon from 'icons/Printer';
@@ -107,6 +110,8 @@
   import InfoIcon from 'icons/InformationOutline';
   import StudentDangerActionModel from './StudentDangerActionModel';
   import ScanningStudentCardModel from './ScanningStudentCardModel';
+  import SelectDeviceModel from './SelectDeviceModel';
+  import CreditCardWirelessOutlineIcon from 'icons/CreditCardWirelessOutline';
   import debounce from 'lodash/debounce';
   import TheStudent from "./TheStudent";
   import {compact, flattenDeep} from "lodash/array";
@@ -118,7 +123,8 @@
   export default {
     name: "StudentsPage",
     components:{FileDownloadIcon, QrIcon,ScanningStudentCardModel,StudentDangerActionModel,AdAccIcon,PrinterIcon,EditIcon,
-      DeleteIcon,ReAddIcon, toNormalModeIcon,toOnlyCheckModeIcon,CheckAllIcon,ClearCheckIcon, InfoIcon},
+      DeleteIcon,ReAddIcon, toNormalModeIcon,toOnlyCheckModeIcon,CheckAllIcon,ClearCheckIcon, InfoIcon, CardScanIcon, CreditCardWirelessOutlineIcon,
+        SelectDeviceModel},
     data() {
       return {
         size: 0,
@@ -205,6 +211,7 @@
       this.$refs.input.$el.focus();
       console.log(this.$route)
       this.refresh();
+      this.$modal.show('SelectDevice');
     },
     methods:{
       async students_provider(cxt){

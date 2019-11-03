@@ -212,8 +212,6 @@ Task RFIDWriteTask(DELAY_TASK, TASK_FOREVER, &rfid_write_callback, &ts, false, &
 bool server_response_ok_on();
 bool server_response_error_on();
 void server_response_off();
-Task ServerResponseOK(2000, TASK_FOREVER, &server_response_off, &ts, false, &server_response_ok_on, &server_response_disable);
-Task ServerResponseError(4000, TASK_ONCE, &server_response_off, &ts, false, &server_response_error_on, &server_response_disable);
 
 void start_command();
 bool server_response_ok_on(){
@@ -516,12 +514,18 @@ void rfid_scan_callback(){
         ws_log(F("This sample only works with MIFARE Classic cards."));
         return;
     }
+    if(LastCardCleaner.isEnabled()){
+      LastCardCleaner.disable();
+    }
     set_busy_state();
-
     
     DynamicJsonDocument data_to_send(3000);
     JsonObject data_object = data_to_send.to<JsonObject>();
     data_object["type"] = WS_TYPE_RESPONSE;
+    JsonArray card_id = data_object.createNestedArray("card_id");
+    for(byte i = 0; i<mfrc522.uid.size; i++){
+      card_id.add(mfrc522.uid.uidByte[i]);
+    }
     for(ReadingSector v: data_to_read) {
       w("now sector "); wln((String) v.sector);
       byte sector = v.sector;
@@ -608,10 +612,17 @@ void rfid_write_callback(){
         ws_log(F("This sample only works with MIFARE Classic cards."));
         return;
     }
+    if(LastCardCleaner.isEnabled()){
+      LastCardCleaner.disable();
+    }
     set_busy_state();    
     DynamicJsonDocument data_to_send(200);
     JsonObject data_object = data_to_send.to<JsonObject>();
     data_object["type"] = WS_TYPE_RESPONSE;
+    JsonArray card_id = data_object.createNestedArray("card_id");
+    for(byte i = 0; i<mfrc522.uid.size; i++){
+      card_id.add(mfrc522.uid.uidByte[i]);
+    }
     bool all_has_been_wrote = true;
     for(WritingSector v: data_to_write) {
       w("now sector "); wln((String) v.sector);
