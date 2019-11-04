@@ -87,11 +87,11 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 
 MFRC522::MIFARE_Key key;
 
-#define APMode false;
-#ifndef APSSID
-#define APSSID "NodeMCU"
-#define APPSK  "12345678"
-#endif
+//#define APMode true
+//#ifndef APSSID
+//#define APSSID "NodeMCU"
+//#define APPSK  "12345678"
+//#endif
 
 ESP8266WebServer server(57300);
 ESP8266WebServer HTTP(80);
@@ -696,13 +696,22 @@ void setup() {
     /* You can remove the password parameter if you want the AP to be open. */
 //    WiFi.softAPConfig(local_IP, gateway, subnet);
 //    WiFi.softAP(ssid, password);
-    WiFi.begin("SH1","01049433");
-    Serial.print("Connecting");
-    while (WiFi.status() != WL_CONNECTED)
-    {
-      delay(500);
-      Serial.print(".");
-    }
+//    WiFi.begin("SH1","01049433");
+//    Serial.print("Connecting");
+//    while (WiFi.status() != WL_CONNECTED)
+//    {
+//      delay(500);
+//      Serial.print(".");
+//    }
+
+    Serial.print("Setting soft-AP configuration ... ");
+    Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Ready" : "Failed!");
+  
+    Serial.print("Setting soft-AP ... ");
+    Serial.println(WiFi.softAP("NodeMCU", "12345678") ? "Ready" : "Failed!");
+  
+    Serial.print("Soft-AP IP address = ");
+    Serial.println(WiFi.softAPIP());
     Serial.println();
     IPAddress myIP = WiFi.localIP();
     Serial.print("AP IP address: ");
