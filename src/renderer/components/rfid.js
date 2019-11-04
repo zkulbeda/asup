@@ -193,6 +193,15 @@ export class RFIDDeviceServer extends EventEmitter{
         this.new_connection_with_context = this.new_connection.bind(this);
         this.wss.on('connection', this.new_connection_with_context);
         this.connections = {};
+        // this.bonjour = require('bonjour')();
+        // console.log(this.browser = this.bonjour.find({}, function (service) {
+        //     console.log('Found an HTTP server:', service)
+        // }));
+        // this.browser.start();
+        // setInterval(()=>{
+        //     this.browser.update();
+        //     console.log('scan');
+        // },3000);
         this.ssdp = new Client();
         this.ssdp.on('response', async (headers, statusCode, rinfo)=>{
             if(this.connections['::ffff:'+rinfo.address]!=undefined){
@@ -208,15 +217,49 @@ export class RFIDDeviceServer extends EventEmitter{
                 console.log(e);
             }
         });
-        this.interval_id = setInterval(()=>{
-            for(let id in this.connections){
-                let cn = this.connections[id];
-                if (cn.isAlive === false) return cn.terminate();
-                cn.isAlive = false;
-                cn.ping();
-            }
-            this.ssdp.search('urn:rfid-lunch:device:rfid-scanner:1.0');
-        }, 5000);
+        // let evilscan = require('evilscan');
+        // this.interval_id = setInterval(()=>{
+        //     for(let id in this.connections){
+        //         let cn = this.connections[id];
+        //         if (cn.isAlive === false) return cn.terminate();
+        //         cn.isAlive = false;
+        //         cn.ping();
+        //     }
+        //     // this.ssdp.search('urn:rfid-lunch:device:rfid-scanner:1.0');
+        //     new evilscan({
+        //         target: '192.168.0.0/16',
+        //         port: 57300,
+        //         status:'O',
+        //     }, (err, scan)=>{
+        //         if(err){
+        //             throw err;
+        //         }
+        //         let data = [];
+        //         scan.on('result', (d)=>{
+        //             console.log('data', d);
+        //             data.push(d);
+        //         })
+        //         scan.on('done', ()=>{
+        //             console.log('done');
+        //             (async (data)=>{
+        //                 for(let e of data){
+        //                     if(this.connections['::ffff:'+e.ip]!=undefined){
+        //                         return;
+        //                     }
+        //                 try {
+        //                     let test = await axios.get('http://' + e.ip + ':' + e.port + '/rfid');
+        //                     if(test.data=='yes'){
+        //                         await axios.get('http://'+e.ip+':'+e.port+'/connect');
+        //                     }
+        //                 }catch (e) {
+        //                     console.log(e);
+        //                 }
+        //             }
+        //             })(data);
+        //         });
+        //         scan.run();
+        //     });
+        // }, 5000);
     }
 
     new_connection(ws, req){

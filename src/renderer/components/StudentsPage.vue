@@ -79,6 +79,7 @@
     <ScanningStudentCardModel :detect="detect"></ScanningStudentCardModel>
     <StudentDangerActionModel :selected="selected"></StudentDangerActionModel>
     <SelectDeviceModel></SelectDeviceModel>
+    <LinkCardModel></LinkCardModel>
   </b-card>
 </template>
 
@@ -110,6 +111,7 @@
   import InfoIcon from 'icons/InformationOutline';
   import StudentDangerActionModel from './StudentDangerActionModel';
   import ScanningStudentCardModel from './ScanningStudentCardModel';
+  import LinkCardModel from './LinkCardCard';
   import SelectDeviceModel from './SelectDeviceModel';
   import CreditCardWirelessOutlineIcon from 'icons/CreditCardWirelessOutline';
   import debounce from 'lodash/debounce';
@@ -124,7 +126,7 @@
     name: "StudentsPage",
     components:{FileDownloadIcon, QrIcon,ScanningStudentCardModel,StudentDangerActionModel,AdAccIcon,PrinterIcon,EditIcon,
       DeleteIcon,ReAddIcon, toNormalModeIcon,toOnlyCheckModeIcon,CheckAllIcon,ClearCheckIcon, InfoIcon, CardScanIcon, CreditCardWirelessOutlineIcon,
-        SelectDeviceModel},
+        SelectDeviceModel, LinkCardModel},
     data() {
       return {
         size: 0,
@@ -258,8 +260,20 @@
           }
         });
       },
+        awaitModal(modelName, params){
+          return new Promise((ok, err)=>{
+              this.$modal.show(modelName, {
+                  ...params, callback: ()=>{console.log('ok'); ok();}, callbackCancel: ()=>{console.log('err');err();}
+              });
+          });
+        },
       async recordCard(){
         await this.$store.dispatch('Students/record_card', this.selected[0]);
+        // let d = await this.awaitModal('SelectDeviceModel');
+        // await this.awaitModal('LinkCardModel', {
+        //     student: this.selected[0],
+        //     connection: d.ip
+        // });
       },
       async detect(d){
         let r = await this.$store.dispatch('Students/find', d);

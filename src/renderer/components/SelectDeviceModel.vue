@@ -15,27 +15,27 @@
         </b-list-group>
       </template>
       <template v-else>
-        <p>В этот день никто не питался. <br>Этот день не будет отображаться в отчёте</p>
+          <hr style="margin-left: -20px; margin-right: -20px;">
+          <div style="
+                text-align: center;
+                margin: 35px 0px;
+            ">
+              <span role="status" class="spinner-grow text-primary" style="width: 3rem; height: 3rem;"><span class="sr-only">Spinning</span></span>
+              <div style="font-size: 20px">Ожидание сканирования</div>
+          <div>Устройство появится автоматически</div>
+          </div>
+          <hr style="margin-left: -20px; margin-right: -20px;">
       </template>
       <div style="display: flex; justify-content: flex-end;">
-        <b-button @click="end" type="submit" :variant="selected!==null?'success':'danger'">{{selected!==null?'Продолжить':'Закрыть день'}}</b-button>
+        <b-button @click="end" type="submit" :variant="selected!==null?'primary':'danger'">{{selected!==null?'Продолжить':'Отмена'}}</b-button>
       </div>
     </div>
   </modal>
 </template>
 
 <script>
-  import Vue from 'vue';
-  import SimpleVueValidation from 'simple-vue-validator';
   import CloseIcon from 'icons/close';
-  import {DateTime} from 'luxon'
   import promiseIpc from 'electron-promise-ipc';
-
-  Vue.use(SimpleVueValidation);
-  // import msgs from './validation.js';
-
-  // SimpleVueValidation.extendTemplates(msgs);
-  // const Validator = SimpleVueValidation.Validator;
   export default {
     components: {
       CloseIcon,
@@ -43,12 +43,10 @@
     name: "SelectDeviceModel",
     data() {
       return {
-        free: null,
-        notfree: null,
-        dayToEdit: null,
-        edit: false,
         selected: null,
-        modelName: 'SelectDevice',
+        modelName: 'SelectDeviceModel',
+          callback: null,
+          callbackCancel: null,
         devices: [
           {name: '', ip: 'dafbgvdfbdfb'},
           {name: '', ip: 'dfvbzxcvvb'},
@@ -58,57 +56,32 @@
     },
     computed: {
       isEmpty(){
-        return !!this.selected;
+        return this.devices.length==0;
       }
     },
     methods: {
-      clearState() {
-        this.free = null;
-        this.notfree = null;
-        this.validation.reset();
-      },
-      check() {
-        this.free = this.free || '';
-        this.notfree = this.notfree || '';
-      },
       async end() {
-        if(!this.isEmpty) {
-          let res = await this.$validate();
-          if (res === false) {
-            this.check();
-            return;
-          }
-        }
-        this.$wait(this.callback({
-          free: this.numFree,
-          notFree: this.numNotFree,
-          dayToEdit: this.dayToEdit
-        }).then(()=>{this.clearState();this.close();}));
+          this.close();
+          console.log(this.isEmpty);
+        if(this.isEmpty || !!this.selected) this.callbackCancel();
+        else this.callback({
+            device: this.devices[this.selected]
+        });
 
       },
-      async deleteDay(){
-        this.$wait(this.callbackDelete({
-          dayToEdit: this.dayToEdit
-        }).then(()=>{this.clearState();this.close();}));
-      },
       close() {
+          this.callbackCancel();
         this.$modal.hide(this.modelName);
       },
       select(i){
         this.selected = i;
       },
       async inits(e){
-        // console.log(e);
-        // this.dayToEdit=e.params.dayToEdit;
-        // this.edit=e.params.edit||false;
-        // if(this.edit){
-        //   this.free=e.params.price.free||0;
-        //   console.log(e.params.price);
-        //   this.notfree=e.params.price.notFree||0;
-        // }else{this.clearState()}
-        // this.count=e.params.count||0;
-        // this.callback=e.params.callback||(()=>Promise.reject());
-        // this.callbackDelete=e.params.callbackDelete||(()=>Promise.reject());
+          if(e.params == undefined){
+              e.params = {};
+          }
+        this.callback=e.params.callback||(()=>{});
+        this.callbackCancel=e.params.callbackCancel||(()=>{});
         this.selected = null;
         await this.get_data();
         this.get_data_with_context = this.get_data.bind(this);
@@ -122,10 +95,18 @@
         }
         this.devices = connections;
       },
+    },
+
       destroy(){
-        promiseIpc.removeListener("connections_change", this.get_data_with_context);
+          promiseIpc.removeListener("connections_change", this.get_data_with_context);
+      },
+      watch: {
+          devices(n){
+              if(n[this.selected] === undefined){
+                  this.selected = null;
+              }
+          }
       }
-    }
   }
 </script>
 

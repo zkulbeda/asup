@@ -14,6 +14,7 @@
 #include <ESP8266WebServer.h>
 #include <WiFiClient.h>
 #include <ESP8266SSDP.h>
+#include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 #include <ArduinoWebsockets.h>
 #include <vector>
@@ -132,6 +133,15 @@ bool server_listen_init(){
     SSDP.setManufacturer("esp8266");
     SSDP.setManufacturerURL("http://example.com/");
     SSDP.begin();
+
+    if (!MDNS.begin("esp8266")) {
+    Serial.println("Error setting up MDNS responder!");
+    while (1) {
+      delay(1000);
+    }
+  }
+    Serial.println("mDNS responder started");
+    MDNS.addService("rfid", "tcp", 57300);
     
     server.on("/", handleRoot);
     server.on("/rfid", handlePing);
@@ -224,10 +234,10 @@ bool server_response_error_on(){
   return true;
 }
 void server_response_off(){
-  ServerResponseOK.disable();
+//  ServerResponseOK.disable();
   set_busy_state();
   //Serial.println("OFFF");
-  waiting.signalComplete();
+//  waiting.signalComplete();
 }
 void server_response_disable(){
   //Serial.println("disssssss");  
