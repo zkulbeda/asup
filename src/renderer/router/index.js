@@ -41,6 +41,11 @@ export default new Router({
       component: require('@/components/SettingsView').default
     },
     {
+      path: '/bot',
+      name: 'bot',
+      component: require('@/components/BotCommands').default
+    },
+    {
       path: '*',
       redirect: '/ScanningPage'
     }

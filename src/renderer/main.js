@@ -22,6 +22,8 @@ import VModal from 'vue-js-modal'
 Vue.use(VModal);
 import VueBar from 'vuebar';
 Vue.use(VueBar);
+import VueBus from 'vue-bus';
+Vue.use(VueBus);
 //require('devtron').install()
 /* eslint-disable no-new */
 

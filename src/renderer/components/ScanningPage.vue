@@ -137,6 +137,7 @@
         },
         beforeDestroy() {
             this.MousetrapSpace = false;
+            this.$bus.off("new_record", this.set_select)
         },
         beforeMount(){
             this.$store.dispatch("ThisDay/refreshSession");
@@ -146,8 +147,13 @@
             window.addByCode = (code)=>{
                 this.onDetect(Promise.resolve({content: code, imageData: ''}));
             }
+            this.$bus.on("new_record", this.set_select)
         },
         methods: {
+            set_select(){
+                console.log('selected');
+                this.selected = 0;
+            },
             viewCard(i) {
                 this.selected = i;
                 this.error = null;

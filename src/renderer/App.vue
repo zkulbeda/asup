@@ -7,6 +7,7 @@
             <b-nav-item to="/ScanningPage" :active="true">Сканировать</b-nav-item>
             <b-nav-item to="/students">Ученики</b-nav-item>
             <b-nav-item to="/create-report" >Отчет</b-nav-item>
+            <b-nav-item to="/bot">Бот</b-nav-item>
             <b-nav-item to="/settings">Настройки</b-nav-item>
           </b-nav>
         </div>

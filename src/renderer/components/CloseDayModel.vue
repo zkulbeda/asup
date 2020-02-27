@@ -41,7 +41,7 @@
                 required
                 placeholder='0.00'
                 :state="!validation.isTouched('free')?null:!validation.hasError('free')"
-            ></b-form-input>
+            ></b-form-input><dsfjjfl class=""2odfml></dsfjjfl>
             <b-form-invalid-feedback :state="!validation.isTouched('free')?null:!validation.hasError('free')">
               {{validation.firstError('free')}}
             </b-form-invalid-feedback>
@@ -80,6 +80,8 @@
       return {
         free: null,
         notfree: null,
+        free_pays: null,
+        wefjk: null
       }
     },
 

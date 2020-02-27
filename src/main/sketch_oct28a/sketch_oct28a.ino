@@ -19,9 +19,9 @@
 #include <ArduinoWebsockets.h>
 #include <vector>
 
-IPAddress local_IP(192,168,100,1);
-IPAddress gateway(192,168,100,1);
-IPAddress subnet(255,255,0,0);
+//IPAddress local_IP(192,168,214,100);
+//IPAddress gateway(192,168,100,1);
+//IPAddress subnet(255,255,0,0);
 
 
 #define LED_BUILTIN 2
@@ -134,14 +134,14 @@ bool server_listen_init(){
     SSDP.setManufacturerURL("http://example.com/");
     SSDP.begin();
 
-    if (!MDNS.begin("esp8266")) {
-    Serial.println("Error setting up MDNS responder!");
-    while (1) {
-      delay(1000);
-    }
-  }
-    Serial.println("mDNS responder started");
-    MDNS.addService("rfid", "tcp", 57300);
+//    if (!MDNS.begin("esp8266")) {
+//    Serial.println("Error setting up MDNS responder!");
+//    while (1) {
+//      delay(1000);
+//    }
+//  }
+//    Serial.println("mDNS responder started");
+//    MDNS.addService("rfid", "tcp", 57300);
     
     server.on("/", handleRoot);
     server.on("/rfid", handlePing);
@@ -184,8 +184,9 @@ void handlePing() {
 void handleConnect(){
   String ip = server.client().remoteIP().toString();
   server.send(200, "text/html", "ok");
-  Serial.println("Connect request");
-  ws.connect("ws://"+ip+":57301/");
+  Serial.print("Connect request from ");
+  Serial.println(ip);
+  Serial.println(ws.connect("ws://"+ip+":57301/"));
 }
 
 struct ReadingSector{
@@ -692,27 +693,27 @@ void setup() {
     while (!Serial);    // Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)  
     
     Serial.println();
-//    Serial.print("Configuring access point...");
+    Serial.print("Configuring access point...");
     /* You can remove the password parameter if you want the AP to be open. */
 //    WiFi.softAPConfig(local_IP, gateway, subnet);
 //    WiFi.softAP(ssid, password);
-//    WiFi.begin("SH1","01049433");
-//    Serial.print("Connecting");
-//    while (WiFi.status() != WL_CONNECTED)
-//    {
-//      delay(500);
-//      Serial.print(".");
-//    }
+    WiFi.begin("SH1","01049433");
+    Serial.print("Connecting");
+    while (WiFi.status() != WL_CONNECTED)
+    {
+      delay(500);
+      Serial.print(".");
+    }
 
-    Serial.print("Setting soft-AP configuration ... ");
-    Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Ready" : "Failed!");
-  
-    Serial.print("Setting soft-AP ... ");
-    Serial.println(WiFi.softAP("NodeMCU", "12345678") ? "Ready" : "Failed!");
-  
-    Serial.print("Soft-AP IP address = ");
-    Serial.println(WiFi.softAPIP());
-    Serial.println();
+//    Serial.print("Setting soft-AP configuration ... ");
+//    Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Ready" : "Failed!");
+//  
+//    Serial.print("Setting soft-AP ... ");
+//    Serial.println(WiFi.softAP("NodeMCU", "12345678") ? "Ready" : "Failed!");
+//  
+//    Serial.print("Soft-AP IP address = ");
+//    Serial.println(WiFi.softAPIP());
+//    Serial.println();
     IPAddress myIP = WiFi.localIP();
     Serial.print("AP IP address: ");
     Serial.println(myIP);

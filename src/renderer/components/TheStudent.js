@@ -6,6 +6,7 @@ import path from "path";
 import {getGlobal} from "@/components/utils";
 import database from '@/components/db';
 import crc32 from "crc/crc32";
+import {hri} from "human-readable-ids";
 
 export class ValidationError extends Error {
     constructor(message, param, data) {
@@ -28,13 +29,14 @@ export default class TheStudent {
      * @param {Number} id
      * @param {Function<Trilogy>} db
      */
-    constructor({studentID = null, code, name, group, pays, hash = null, card_data = null, id = null}, db = database) {
+    constructor({studentID = null, code, name, group, pays, hash = null, card_data = null, id = null, invitaion_code = null}, db = database) {
         this.studentID = studentID || id;
         this.code = code;
         this.name = trim(name);
         this.group = group;
         this.hash = hash;
         this.card_data = card_data;
+        this.invitaion_code = invitaion_code;
         this.pays = Boolean(pays).valueOf();
         this._db = database;
     }
@@ -68,11 +70,13 @@ export default class TheStudent {
     }
 
     toJSON() {
-        return {studentID: this.studentID, code: this.code, name: this.name, group: this.group, pays: this.pays, hash: this.hash, card_data: this.card_data}
+        return {studentID: this.studentID, code: this.code, name: this.name, group: this.group, pays: this.pays, hash: this.hash, card_data: this.card_data,
+            invitaion_code: this.invitaion_code}
     }
 
     toJSONSQL() {
-        return {id: this.studentID, code: this.code, name: this.name, group: this.group, pays: this.pays, hash: this.hash, card_data: this.card_data};
+        return {id: this.studentID, code: this.code, name: this.name, group: this.group, pays: this.pays, hash: this.hash, card_data: this.card_data,
+            invitaion_code: this.invitaion_code};
     }
 
     async save() {
@@ -85,7 +89,8 @@ export default class TheStudent {
         let validationResult = this.isValidFromObject({name, group});
         if (validationResult !== true) throw validationResult;
         let hash = crc32(name);
-        let inst = await db().getModel('students').create({id: studentID, code, name, group, pays, hash, card_data});
+        let invitation_code = hri.random();
+        let inst = await db().getModel('students').create({id: studentID, code, name, group, pays, hash, card_data, invitation_code});
         console.log(inst)
         return new this(inst, db);
     }

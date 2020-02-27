@@ -204,20 +204,24 @@ export class RFIDDeviceServer extends EventEmitter{
         // },3000);
         this.ssdp = new Client();
         this.ssdp.on('response', async (headers, statusCode, rinfo)=>{
+            // console.log(this.connections)
             if(this.connections['::ffff:'+rinfo.address]!=undefined){
                 return;
             }
             console.log('connect to '+rinfo.address);
             try {
                 let test = await axios.get('http://' + rinfo.address + ':' + device_port + '/rfid');
+                // console.log(test);
                 if(test.data=='yes'){
                     await axios.get('http://'+rinfo.address+':'+device_port+'/connect');
+                    console.log('connecting')
                 }
             }catch (e) {
                 console.log(e);
             }
         });
         // let evilscan = require('evilscan');
+        this.ssdp.search('urn:rfid-lunch:device:rfid-scanner:1.0');
         this.interval_id = setInterval(()=>{
             for(let id in this.connections){
                 let cn = this.connections[id];

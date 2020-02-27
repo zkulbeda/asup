@@ -60,7 +60,9 @@ const mutations = {
 const actions = {
   async init({dispatch, commit}) {
     promiseIpc.on("day_started", ()=>dispatch("refreshSession"));
-    promiseIpc.on("student_recorded", ()=>dispatch("refreshList"));
+    promiseIpc.on("student_recorded", ()=>{
+      return dispatch("refreshList");
+    });
       console.log('init ThisDay');
       dispatch("refreshSession");
     commit('init');

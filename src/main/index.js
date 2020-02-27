@@ -26,6 +26,44 @@ import {MifareKey} from '@/components/rfid_query';
 let card_key =new MifareKey([0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF], 'A')
 let card_key_b =new MifareKey([0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF], 'B')
 
+
+import firebase from "firebase";
+import "firebase/firestore";
+firebase.initializeApp({
+    apiKey: "AIzaSyAKdpgpZx5bme7bRNn-5Ta700iGsTRPueo",
+    authDomain: "asup-bot.firebaseapp.com",
+    databaseURL: "https://asup-bot.firebaseio.com",
+    projectId: "asup-bot",
+    storageBucket: "asup-bot.appspot.com",
+    messagingSenderId: "894948205672",
+    appId: "1:894948205672:web:0c0078edb17f1db9e647dd"
+})
+
+const firestore = firebase.firestore();
+
+global.bot_api = {
+    commands: "https://us-central1-asup-bot.cloudfunctions.net/commands",
+    vk_handler: "https://us-central1-asup-bot.cloudfunctions.net/vk_bot",
+    rg_handler: "https://us-central1-asup-bot.cloudfunctions.net/tg_bot"
+}
+
+let default_bot_settings = {
+    day_stamp: 0,
+    is_poll_active: true,
+    menu: {}
+}
+
+const init_bot = async ()=>{
+    let system = await firestore.collection("system").doc("settings").get();
+    if(system.exists){
+        await system.ref.update(merge(default_bot_settings, system.data()));
+    }else{
+        await system.ref.set(default_bot_settings);
+    }
+}
+
+global.firestore = firestore;
+
 global.userPath = app.getPath('userData');
 /**
  * Set `__static` path to static files in production
@@ -60,7 +98,8 @@ async function initDB(db) {
         group: {type: String, nullable: false},
         pays: {type: Boolean, nullable: false},
         hash: {type: Number, nullable: false},
-        card_data: {type: Number, nullable: false}
+        card_data: {type: Number, nullable: false},
+        invitation_code: {type: String, nullable: true}
     }, {index: 'code'});
     global.days = await db.model('days', {
         id: 'increments',
@@ -260,7 +299,8 @@ let student_scan_callback = async (data, card_id)=>{
 };
 
 app.on('ready', async () => {
-    await initDB(db)
+    await initDB(db);
+    await init_bot();
     createWindow()
     let s = server.listen(9321, ()=>{
         console.log(s.address())
