@@ -40,7 +40,7 @@
             async selectCamera() {
                 try {
                     let id = await cameraDialog();
-                    this.$config.set('deviceID', id);
+                    this.$config.set('deviceID', id.label);
                 } catch (e) {
                 }
             },

@@ -6,7 +6,6 @@
 
 <script>
   let {app, dialog, shell} = require('electron').remote;
-  import QrcodeStream from './VueScan/components/QrcodeStream';
   import CameraViewOld from './CameraViewOld';
   import cameraDialog from './selectCamera';
   import Pizzicato from 'pizzicato';
@@ -16,7 +15,7 @@
     options: { path: require('@/assets/beep.wav'), attack: 0 }
   });
   export default {
-    components: {QrcodeStream, CameraViewOld},
+    components: {CameraViewOld},
     model: {
       prop: 'paused',
       event: 'changeState'
@@ -27,6 +26,7 @@
     },
     data() {
       let id = this.$config.get('deviceID');
+      console.log("config id", id);
       return {
         deviceID: id,
         cameraFound: true,
@@ -48,6 +48,7 @@
       async selectCamera() {
         try {
           let id = await cameraDialog();
+          id = id.label;
           this.$config.set('deviceID', id);
           this.deviceID = id;
           this.cameraFound = true;
@@ -76,7 +77,8 @@
           this.cameraFound = true;
           // successfully initialized
         } catch (error) {
-          console.error(error)
+          console.error(error);
+          console.log("ERRRRRORRR");
           if (error.name === 'NotFoundError') {
 
           } else if (error.name === 'NotReadableError') {

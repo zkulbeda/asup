@@ -70,11 +70,11 @@
     import {getGlobal} from "@/components/utils";
     import axios from "axios"
 
-    const bot_api = axios.create({
-        url: getGlobal("bot_api").commands
-    });
-
-    const db = getGlobal('firestore');
+    // const bot_api = axios.create({
+    //     url: getGlobal("bot_api").commands
+    // });
+    //
+    // const db = getGlobal('firestore');
 
     Vue.use(SimpleVueValidation);
     import msgs from './validation.js';
@@ -82,54 +82,54 @@
     SimpleVueValidation.extendTemplates(msgs);
     const Validator = SimpleVueValidation.Validator;
 
-    async function*  sendingMessages(studets, menu){
-        await bot_api.post({
-            data: {
-                query: "start_poll",
-                menu
-            }
-        });
-        for(let student of students){
-            let student_ref = await db.collection("student").doc(student.studentID).get;
-            let [first_name, last_name, patronymic] = student.name.split(" ");
-            if(!student_ref.exists){
-                await student.ref.ref.set({
-                    answer: false,
-                    answer_day_stamp: 0,
-                    bot_type: null,
-                    user_id: null,
-                    eating_type: student.pays?"notfree":"free",
-                    name: {
-                        first_name, last_name, patronymic
-                    },
-                    invitation_code: student.invitation_code,
-                    last_message_id: null,
-                    last_sticker_message_id: null,
-                    late_day_stamp: null,
-                    message_send_day_stamp: null,
-                    send_stickers: true,
-                    send_messages: true,
-                })
-            }else {
-                await student_ref.ref.update({
-                    answer: false,
-                    answer_day_stamp: true,
-                    eating_type: student.pays?"notfree":"free",
-                    name: {
-                        first_name, last_name, patronymic
-                    },
-                    invitation_code: student.invitation_code,
-                })
-            }
-            await bot_api.post({
-                data: {
-                    query: "sendQuestions",
-                    student_id: student.studentID
-                }
-            })
-            yield student;
-        }
-    }
+    // async function*  sendingMessages(studets, menu){
+    //     await bot_api.post({
+    //         data: {
+    //             query: "start_poll",
+    //             menu
+    //         }
+    //     });
+    //     for(let student of students){
+    //         let student_ref = await db.collection("student").doc(student.studentID).get;
+    //         let [first_name, last_name, patronymic] = student.name.split(" ");
+    //         if(!student_ref.exists){
+    //             await student.ref.ref.set({
+    //                 answer: false,
+    //                 answer_day_stamp: 0,
+    //                 bot_type: null,
+    //                 user_id: null,
+    //                 eating_type: student.pays?"notfree":"free",
+    //                 name: {
+    //                     first_name, last_name, patronymic
+    //                 },
+    //                 invitation_code: student.invitation_code,
+    //                 last_message_id: null,
+    //                 last_sticker_message_id: null,
+    //                 late_day_stamp: null,
+    //                 message_send_day_stamp: null,
+    //                 send_stickers: true,
+    //                 send_messages: true,
+    //             })
+    //         }else {
+    //             await student_ref.ref.update({
+    //                 answer: false,
+    //                 answer_day_stamp: true,
+    //                 eating_type: student.pays?"notfree":"free",
+    //                 name: {
+    //                     first_name, last_name, patronymic
+    //                 },
+    //                 invitation_code: student.invitation_code,
+    //             })
+    //         }
+    //         await bot_api.post({
+    //             data: {
+    //                 query: "sendQuestions",
+    //                 student_id: student.studentID
+    //             }
+    //         })
+    //         yield student;
+    //     }
+    // }
 
     export default {
         components: {
@@ -154,18 +154,18 @@
         }),
 
         async mounted(){
-            let settings_ref = await db.collection("system").doc("settings");
-            this.bot_status = settings_ref.data().is_poll_active;
+            // let settings_ref = await db.collection("system").doc("settings");
+            // this.bot_status = settings_ref.data().is_poll_active;
         },
 
         methods: {
             async send(){
-                for await (let res of sendingMessages(this.$store.state.Students.students, {
-                    "free": "Тест для бесплатных",
-                    "notfree":"Тест для платных"
-                })){
-                    console.log(res);
-                }
+                // for await (let res of sendingMessages(this.$store.state.Students.students, {
+                //     "free": "Тест для бесплатных",
+                //     "notfree":"Тест для платных"
+                // })){
+                //     console.log(res);
+                // }
             }
         },
 
