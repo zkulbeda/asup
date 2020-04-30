@@ -100,7 +100,7 @@
     "instascan": "^1.0.0",
     "intl": "^1.2.5",
     "intl-relativeformat": "^6.4.3",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "jspdf": "^1.5.3",
     "jsqr": "^1.2.0",
     "knex": "^0.19.4",
